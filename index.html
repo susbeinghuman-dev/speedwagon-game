@@ -715,6 +715,8 @@
       <div id="duel-match-area" style="margin: 20px 0;">
         <p id="duel-status-msg" style="margin-bottom: 8px; font-weight: bold;">Ready to test your speed against another player?</p>
         <p id="duel-connection-timer" class="connection-timer"></p>
+        <p id="duel-candidate-info" class="connection-timer"></p>
+        <button class="submit-btn" id="choose-player-btn" style="display:none; margin-bottom: 12px; background: #06d6a0;">Choose Player</button>
         <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:12px;">
           <label for="duel-bet-input" style="font-size:0.9rem; color:var(--text-sub);">Bet:</label>
           <input type="number" id="duel-bet-input" min="0" value="0" style="width:120px; padding:8px; border-radius:8px; border:2px solid var(--border-color); background:transparent; color:var(--text-main);">
@@ -981,6 +983,8 @@
     const oppDuelPercentElem = document.getElementById('opp-duel-percent');
     const oppDuelBarElem = document.getElementById('opp-duel-bar');
     const duelConnectionTimerElem = document.getElementById('duel-connection-timer');
+    const duelCandidateInfo = document.getElementById('duel-candidate-info');
+    const choosePlayerBtn = document.getElementById('choose-player-btn');
     const duelGiveupBtn = document.getElementById('duel-giveup-btn');
     const clickEffectContainer = document.getElementById('click-effect-container');
 
@@ -995,6 +999,8 @@
     let myDuelClicks = 0;
     let oppDuelClicks = 0;
     let opponentName = "Challenger";
+    let duelCandidate = null;
+    let duelHasEnded = false;
     let duelListenerRef = null;
     let botInterval = null;
     let currentDuelBet = 0;
@@ -1287,8 +1293,17 @@
         duelConnectionInterval = null;
       }
 
+      duelHasEnded = false;
       if (duelConnectionTimerElem) {
         duelConnectionTimerElem.textContent = '';
+      }
+      if (duelCandidateInfo) {
+        duelCandidateInfo.textContent = '';
+      }
+      duelCandidate = null;
+      if (choosePlayerBtn) {
+        choosePlayerBtn.style.display = 'none';
+        choosePlayerBtn.disabled = false;
       }
 
       duelMatchArea.style.display = 'block';
@@ -1353,13 +1368,10 @@
           const room = duels[key];
           const roomBet = room.bet || 0;
           if (room.status === 'waiting' && room.p1 !== currentUser && roomBet === bet) {
-            currentDuelRoomId = key;
-            duelRole = 'player2';
-            opponentName = room.p1;
-            return true;
+            return { roomId: key, player: room.p1 };
           }
         }
-        return false;
+        return null;
       });
     }
 
@@ -1373,6 +1385,40 @@
       }
       duelStatusMsg.textContent = `No real opponent found — bot opponent (${profile.label}) joined.`;
       initiateDuelMatch(true);
+    }
+
+    if (choosePlayerBtn) {
+      choosePlayerBtn.addEventListener('click', () => {
+        if (!duelCandidate || !duelCandidate.roomId) return;
+        currentDuelRoomId = duelCandidate.roomId;
+        duelRole = 'player2';
+        opponentName = duelCandidate.player;
+        if (choosePlayerBtn) {
+          choosePlayerBtn.disabled = true;
+          choosePlayerBtn.textContent = 'Inviting...';
+        }
+
+        db.ref('duels/' + currentDuelRoomId).transaction((room) => {
+          if (!room || room.status !== 'waiting') {
+            return room;
+          }
+          room.p2 = currentUser;
+          room.status = 'starting';
+          return room;
+        }, (err, committed, snapshot) => {
+          if (err || !committed || !snapshot.exists()) {
+            duelStatusMsg.textContent = 'Another player joined first. Searching again...';
+            if (choosePlayerBtn) {
+              choosePlayerBtn.style.display = 'none';
+              choosePlayerBtn.disabled = false;
+            }
+            duelCandidate = null;
+            return;
+          }
+          stopDuelConnectionTimer();
+          initiateDuelMatch(false);
+        });
+      });
     }
 
     startDuelBtn.addEventListener('click', () => {
@@ -1389,19 +1435,30 @@
       duelStatusMsg.textContent = 'Searching for an active opponent...';
       duelConnectionSeconds = 10;
       updateDuelConnectionTimer();
+      duelCandidate = null;
+      if (choosePlayerBtn) {
+        choosePlayerBtn.style.display = 'none';
+        choosePlayerBtn.disabled = false;
+      }
+      if (duelCandidateInfo) {
+        duelCandidateInfo.textContent = '';
+      }
 
       let hasCreatedWaitingRoom = false;
-      let foundRealOpponent = false;
+      let candidateFound = false;
 
       const tryMatch = () => {
-        if (inDuelMatch || foundRealOpponent) return;
-        pollOpenDuelRoom(bet).then((found) => {
-          if (found) {
-            foundRealOpponent = true;
-            stopDuelConnectionTimer();
-            db.ref('duels/' + currentDuelRoomId).update({ p2: currentUser, status: 'starting' }).then(() => {
-              initiateDuelMatch(false);
-            });
+        if (inDuelMatch || candidateFound) return;
+        pollOpenDuelRoom(bet).then((candidate) => {
+          if (candidate) {
+            candidateFound = true;
+            duelCandidate = candidate;
+            if (duelCandidateInfo) {
+              duelCandidateInfo.textContent = `Detected waiting player ${candidate.player}. Click choose to challenge them.`;
+            }
+            if (choosePlayerBtn) {
+              choosePlayerBtn.style.display = 'inline-block';
+            }
           } else if (!hasCreatedWaitingRoom) {
             hasCreatedWaitingRoom = true;
             currentDuelRoomId = 'duel_' + Date.now();
@@ -1415,13 +1472,17 @@
               bet: bet
             });
             roomRef.onDisconnect().remove();
-            db.ref('duels/' + currentDuelRoomId + '/status').on('value', (snap) => {
-              if (snap.val() === 'starting' && !inDuelMatch) {
+            db.ref('duels/' + currentDuelRoomId).on('value', (snap) => {
+              const data = snap.val();
+              if (!data) return;
+              if (data.status === 'starting' && !inDuelMatch) {
                 stopDuelConnectionTimer();
-                db.ref('duels/' + currentDuelRoomId + '/p2').once('value').then((p2Snap) => {
-                  opponentName = p2Snap.val() || 'Challenger';
-                  initiateDuelMatch(false);
-                });
+                opponentName = data.p2 || 'Challenger';
+                initiateDuelMatch(false);
+                return;
+              }
+              if (data.status === 'finished' && !duelHasEnded) {
+                handleRemoteDuelFinish(data);
               }
             });
           }
@@ -1438,7 +1499,9 @@
         updateDuelConnectionTimer();
         if (duelConnectionSeconds <= 0) {
           stopDuelConnectionTimer();
-          startDuelFallbackBot();
+          if (!candidateFound) {
+            startDuelFallbackBot();
+          }
         } else {
           tryMatch();
         }
@@ -1526,6 +1589,10 @@
       duelListenerRef.on('value', (snapshot) => {
         const data = snapshot.val();
         if (!data || !isDuelActive) return;
+        if (data.status === 'finished' && !duelHasEnded) {
+          handleRemoteDuelFinish(data);
+          return;
+        }
 
         oppDuelClicks = data[oppKey] || 0;
         updateDuelBars();
@@ -1588,6 +1655,8 @@
     }
 
     function endDuel(won) {
+      if (duelHasEnded) return;
+      duelHasEnded = true;
       isDuelActive = false;
       inDuelMatch = false;
 
@@ -1600,12 +1669,15 @@
         duelListenerRef = null;
       }
 
+      if (!opponentName.startsWith('ChallengerBot') && currentDuelRoomId) {
+        finishDuelRoom(won);
+      }
+
       closeDuelBtn.style.display = 'block';
 
       if (won) {
         // standard duel reward
         gold += 4000;
-        // award bet pot (both players' bets)
         const pot = currentDuelBet && currentDuelBet > 0 ? currentDuelBet * 2 : 0;
         if (pot > 0) {
           gold += pot;
@@ -1618,9 +1690,58 @@
         alert(`BRUHHHH! You lost the duel and forfeited 2,000 Speed${lostBetMsg}. 🥲`);
       }
 
-      // clear stored bet
       currentDuelBet = 0;
 
+      updateUI();
+      saveUserDataGlobal();
+      resetDuelUI();
+    }
+
+    function finishDuelRoom(won) {
+      if (!currentDuelRoomId) return;
+      const winner = won ? (duelRole === 'player1' ? 'p1' : 'p2') : (duelRole === 'player1' ? 'p2' : 'p1');
+      const loser = winner === 'p1' ? 'p2' : 'p1';
+      const roomUpdate = {
+        status: 'finished',
+        winner,
+        loser,
+        forfeit: !won,
+        finishedAt: Date.now()
+      };
+      if (duelRole === 'player1') {
+        roomUpdate.p1Clicks = myDuelClicks;
+        roomUpdate.p2Clicks = oppDuelClicks;
+      } else {
+        roomUpdate.p1Clicks = oppDuelClicks;
+        roomUpdate.p2Clicks = myDuelClicks;
+      }
+      db.ref('duels/' + currentDuelRoomId).update(roomUpdate);
+    }
+
+    function handleRemoteDuelFinish(data) {
+      if (duelHasEnded) return;
+      duelHasEnded = true;
+      isDuelActive = false;
+      inDuelMatch = false;
+
+      const localKey = duelRole === 'player1' ? 'p1' : 'p2';
+      const localWon = data.winner === localKey;
+      const pot = currentDuelBet && currentDuelBet > 0 ? currentDuelBet * 2 : 0;
+
+      if (localWon) {
+        gold += 4000;
+        if (pot > 0) {
+          gold += pot;
+          alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed plus ${pot.toLocaleString()} Speed from bets! 🥰`);
+        } else {
+          alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed! 🥰`);
+        }
+      } else {
+        const lostBetMsg = pot > 0 ? ` and forfeited ${pot / 2} Speed bet` : '';
+        alert(`BRUHHHH! Your opponent won the duel${lostBetMsg}. 🥲`);
+      }
+
+      currentDuelBet = 0;
       updateUI();
       saveUserDataGlobal();
       resetDuelUI();
