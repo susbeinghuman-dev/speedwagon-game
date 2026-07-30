@@ -1,0 +1,1699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpeedWagon 🔥</title>
+
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    :root {
+      --bg-gradient: linear-gradient(135deg, #fffaf0 0%, #f7cad0 100%);
+      --text-main: #4a2c00;
+      --text-sub: #6c584c;
+      --game-bg: radial-gradient(circle, #fff0f3 0%, #f7cad0 100%);
+      --border-color: #f4acb7;
+      --shop-bg: #fff5f5;
+      --btn-bg: #fec5bb;
+      --btn-hover: #fcd5ce;
+      --btn-border: #f72585;
+      --btn-text: #4a2c00;
+      --accent-pink: #d81159;
+      --bright-pink: #f72585;
+      --count-color: #a4133c;
+      --subtext-color: #590d22;
+      --card-bg: #ffffff;
+    }
+
+    body.dark-mode {
+      --bg-gradient: linear-gradient(135deg, #121212 0%, #2a1b24 100%);
+      --text-main: #f8f9fa;
+      --text-sub: #d8c4cd;
+      --game-bg: radial-gradient(circle, #1a1016 0%, #2d1825 100%);
+      --border-color: #f72585;
+      --shop-bg: #1e131b;
+      --btn-bg: #2d1a29;
+      --btn-hover: #3d2338;
+      --btn-border: #f72585;
+      --btn-text: #f8f9fa;
+      --accent-pink: #ff4d8d;
+      --bright-pink: #f72585;
+      --count-color: #ff75a0;
+      --subtext-color: #d8c4cd;
+      --card-bg: #2a1b24;
+    }
+
+    body {
+      font-family: 'Courier New', Courier, monospace;
+      background: var(--bg-gradient);
+      color: var(--text-main);
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    .game-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-right: 4px solid var(--border-color);
+      background: var(--game-bg);
+      padding: 20px;
+      position: relative;
+      transition: background 0.3s ease, border-color 0.3s ease;
+    }
+
+    .controls-container {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      display: flex;
+      gap: 10px;
+      z-index: 10;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .top-control-btn {
+      background: var(--bright-pink);
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(247, 37, 133, 0.3);
+      transition: background 0.2s ease, transform 0.1s ease;
+    }
+
+    .top-control-btn.off {
+      background: var(--text-sub);
+    }
+
+    .top-control-btn:hover {
+      opacity: 0.9;
+    }
+
+    .top-control-btn:active {
+      transform: scale(0.95);
+    }
+
+    .slider-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--card-bg);
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 2px solid var(--border-color);
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--accent-pink);
+    }
+
+    .slider-container input[type="range"] {
+      accent-color: var(--bright-pink);
+      cursor: pointer;
+      width: 100px;
+    }
+
+    .score-container {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .score-container h1 {
+      font-size: 2.8rem;
+      color: var(--accent-pink);
+      text-shadow: 2px 2px 0px rgba(255, 255, 255, 0.2);
+    }
+
+    .user-tag {
+      font-size: 1rem;
+      font-weight: bold;
+      color: var(--bright-pink);
+      margin-top: -5px;
+      margin-bottom: 10px;
+    }
+
+    .score-container p {
+      font-size: 1.2rem;
+      color: var(--text-sub);
+      margin-top: 5px;
+    }
+
+    .click-btn {
+      width: 220px;
+      height: 220px;
+      background: #ffb5a7;
+      border: 8px solid var(--bright-pink);
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px rgba(247, 37, 133, 0.4);
+      transition: transform 0.05s ease, box-shadow 0.05s ease;
+      outline: none;
+      z-index: 2;
+    }
+
+    .click-img {
+      width: 70%;
+      height: 70%;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .click-btn:active, .click-btn.active-key {
+      transform: scale(0.92);
+      box-shadow: 0 5px 10px rgba(247, 37, 133, 0.4);
+    }
+
+    #emoji-popup {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.5);
+      pointer-events: none;
+      opacity: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.15s ease;
+    }
+
+    #emoji-popup img {
+      max-width: 90vw;
+      max-height: 90vh;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+      transform: scale(0.5);
+      transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #emoji-popup.show {
+      opacity: 1;
+    }
+
+    #emoji-popup.show img {
+      transform: scale(1);
+    }
+
+    .shop-section {
+      width: 380px;
+      background: var(--shop-bg);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      transition: background 0.3s ease;
+    }
+
+    .shop-section h2 {
+      text-align: center;
+      color: var(--accent-pink);
+      margin-bottom: 20px;
+      border-bottom: 2px dashed var(--border-color);
+      padding-bottom: 10px;
+      letter-spacing: 2px;
+    }
+
+    .upgrade-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+    }
+
+    .upgrade-btn {
+      background: var(--btn-bg);
+      border: 2px solid var(--btn-border);
+      border-radius: 12px;
+      padding: 12px;
+      color: var(--btn-text);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.1s ease, opacity 0.2s ease;
+      font-family: inherit;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .upgrade-btn:hover:not(:disabled) {
+      background: var(--btn-hover);
+      transform: translateY(-2px);
+    }
+
+    .upgrade-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .upgrade-details {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .upgrade-icon {
+      width: 44px;
+      height: 44px;
+      object-fit: contain;
+      border-radius: 8px;
+      background: rgba(247, 37, 133, 0.1);
+      padding: 4px;
+    }
+
+    .upgrade-info {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .upgrade-info h3 {
+      font-size: 1rem;
+      color: var(--accent-pink);
+    }
+
+    .upgrade-info p {
+      font-size: 0.8rem;
+      color: var(--subtext-color);
+    }
+
+    .upgrade-count {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: var(--count-color);
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      border: 3px solid var(--bright-pink);
+      border-radius: 16px;
+      padding: 30px;
+      width: 90%;
+      max-width: 460px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      color: var(--text-main);
+      text-align: center;
+      position: relative;
+    }
+
+    .modal-card h2 {
+      color: var(--accent-pink);
+      margin-bottom: 15px;
+    }
+
+    .auth-toggle-container {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .auth-toggle-btn {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      border: 2px solid var(--border-color);
+      color: var(--text-main);
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .auth-toggle-btn.active {
+      background: var(--bright-pink);
+      color: #fff;
+      border-color: var(--bright-pink);
+    }
+
+    .modal-card input[type="text"],
+    .modal-card input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid var(--border-color);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      outline: none;
+      background: transparent;
+      color: var(--text-main);
+    }
+
+    .modal-card input:focus {
+      border-color: var(--bright-pink);
+    }
+
+    .auth-error-msg {
+      color: var(--accent-pink);
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      min-height: 1.2em;
+    }
+
+    .modal-card button.submit-btn {
+      width: 100%;
+      padding: 12px;
+      background: var(--bright-pink);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .modal-card button.submit-btn:hover {
+      opacity: 0.9;
+    }
+
+    .close-modal-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: transparent;
+      border: none;
+      font-size: 1.2rem;
+      color: var(--accent-pink);
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .minigame-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .minigame-option-btn {
+      background: var(--btn-bg);
+      border: 2px solid var(--btn-border);
+      color: var(--btn-text);
+      padding: 14px;
+      border-radius: 10px;
+      font-size: 1.05rem;
+      font-weight: bold;
+      cursor: pointer;
+      font-family: inherit;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .minigame-option-btn:hover {
+      background: var(--btn-hover);
+      transform: translateY(-2px);
+    }
+
+    .wheel-wrapper {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 15px auto;
+    }
+
+    .wheel-pointer {
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-top: 25px solid var(--bright-pink);
+      z-index: 10;
+    }
+
+    #roulette-canvas {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 5px solid var(--bright-pink);
+      box-shadow: 0 0 15px rgba(247, 37, 133, 0.4);
+    }
+
+    .roulette-status {
+      font-weight: bold;
+      margin: 10px 0;
+      min-height: 1.5em;
+      color: var(--accent-pink);
+    }
+
+    .duel-countdown-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.85);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+
+    .duel-countdown-num {
+      font-size: 4rem;
+      font-weight: bold;
+      color: #ff75a0;
+      text-shadow: 0 0 20px #f72585;
+      margin-top: 10px;
+    }
+
+    .duel-countdown-img {
+      width: 120px;
+      height: 120px;
+      object-fit: cover;
+      border-radius: 12px;
+      border: 3px solid var(--bright-pink);
+      box-shadow: 0 0 15px var(--bright-pink);
+    }
+
+    .duel-progress-container {
+      margin: 15px 0;
+      text-align: left;
+    }
+
+    .duel-player-bar-bg {
+      width: 100%;
+      height: 24px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
+      margin: 6px 0 12px 0;
+    }
+
+    .duel-player-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ff75a0, #f72585);
+      transition: width 0.05s ease;
+    }
+
+    .duel-click-target-btn {
+      width: 160px;
+      height: 160px;
+      margin: 15px auto;
+      background: #f72585;
+      border: 6px solid #fff;
+      border-radius: 50%;
+      color: #fff;
+      font-size: 1.3rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(247, 37, 133, 0.6);
+    }
+
+    .duel-click-target-btn:active, .duel-click-target-btn.active-key {
+      transform: scale(0.92);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="modal-overlay active" id="login-modal">
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-login-btn" title="Back to Game">✕</button>
+      <h2>SpeedWagon 🔥</h2>
+      
+      <div class="auth-toggle-container">
+        <button class="auth-toggle-btn active" id="toggle-login-btn">Login</button>
+        <button class="auth-toggle-btn" id="toggle-register-btn">Create Account</button>
+      </div>
+
+      <input type="text" id="username-input" placeholder="Username..." maxlength="15">
+      <input type="password" id="password-input" placeholder="Password...">
+      
+      <div class="auth-error-msg" id="auth-error"></div>
+
+      <button class="submit-btn" id="auth-submit-btn">Login</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="leaderboard-modal">
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-leaderboard-btn">✕</button>
+      <h2>Global-Leaderboard 🥵</h2>
+      <div style="max-height: 250px; overflow-y: auto;">
+        <table class="leaderboard-table" style="width: 100%;">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Player</th>
+              <th>Speed</th>
+              <th>Total</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="minigames-modal">
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-minigames-btn">✕</button>
+      <h2>😡 Mini Games 🥵</h2>
+      <div class="minigame-list">
+        <button class="minigame-option-btn" id="open-roulette-btn">Speed-Roulette (1,000 Speed)</button>
+        <button class="minigame-option-btn" id="open-duel-btn" style="background: #e63946; color: #fff;">🔥-SpeedDuel (2,000 Speed)</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="roulette-modal">
+    <div class="modal-card">
+      <button class="close-modal-btn" id="close-roulette-btn">✕</button>
+      <h2>Speed-Roulette</h2>
+      <p style="font-size: 0.85rem; color: var(--text-sub);">Spin cost: <b>1,000 Speed</b></p>
+      
+      <div class="wheel-wrapper">
+        <div class="wheel-pointer"></div>
+        <canvas id="roulette-canvas" width="300" height="300"></canvas>
+      </div>
+
+      <div class="roulette-status" id="roulette-status">Spin to win!</div>
+
+      <button class="submit-btn" id="spin-roulette-btn">SPIN (1,000 Speed)</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="duel-modal">
+    <div class="modal-card" style="max-width: 480px;">
+      <button class="close-modal-btn" id="close-duel-btn">✕</button>
+      <h2>🔥 SpeedDuel 🔥</h2>
+      <p style="font-size: 0.85rem; color: var(--text-sub);" id="duel-subtitle">First to 100 Clicks Wins 2,000 Speed!</p>
+
+      <div class="duel-countdown-overlay" id="duel-countdown-box" style="display: none;">
+        <img id="duel-countdown-img" class="duel-countdown-img" src="" alt="Duel Countdown">
+        <div class="duel-countdown-num" id="duel-countdown-num">3</div>
+        <p style="color: #fff; margin-top: 10px; font-weight: bold;">GET READY TO CLICK!</p>
+      </div>
+
+      <div id="duel-match-area" style="margin: 20px 0;">
+        <p id="duel-status-msg" style="margin-bottom: 15px; font-weight: bold;">Ready to test your speed against another player?</p>
+        <button class="submit-btn" id="start-duel-btn" style="background: #e63946;">Find Match (2,000 Speed)</button>
+      </div>
+
+      <div id="duel-arena-area" style="display: none;">
+        <div class="duel-progress-container">
+          <div style="display:flex; justify-content: space-between; font-weight:bold;">
+            <span>YOU (<span id="my-duel-clicks">0</span>/100)</span>
+            <span id="my-duel-percent" style="margin-left: auto;">0%</span>
+          </div>
+          <div class="duel-player-bar-bg">
+            <div class="duel-player-bar-fill" id="my-duel-bar"></div>
+          </div>
+
+          <div style="display:flex; justify-content: space-between; font-weight:bold; margin-top: 10px;">
+            <span id="opp-duel-name">OPPONENT (0/100)</span>
+            <span id="opp-duel-percent" style="margin-left: auto;">0%</span>
+          </div>
+          <div class="duel-player-bar-bg">
+            <div class="duel-player-bar-fill" id="opp-duel-bar" style="background: linear-gradient(90deg, #3a86ff, #4361ee);"></div>
+          </div>
+        </div>
+
+        <button class="duel-click-target-btn" id="duel-click-btn">CLICK! (M1 / Space)</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="emoji-popup"></div>
+
+  <div class="game-section">
+    <div class="controls-container">
+      <button class="top-control-btn" id="hide-img-btn">Popups: ON (E)</button>
+      
+      <div class="slider-container">
+        <label for="popup-duration">Popup: <span id="duration-val">0.7</span>s</label>
+        <input type="range" id="popup-duration" min="0.1" max="2.0" step="0.1" value="0.7">
+      </div>
+
+      <button class="top-control-btn" id="dark-mode-btn">Dark Mode (Q)</button>
+      <button class="top-control-btn" id="leaderboard-btn">Global Leaderboard (L)</button>
+      <button class="top-control-btn" id="minigames-btn" style="background: #7209b7;">Mini Games (M)</button>
+      <button class="top-control-btn" id="logout-btn" style="background: var(--text-sub);">Switch User</button>
+    </div>
+
+    <div class="score-container">
+      <h1>SpeedWagon 🔥</h1>
+      <div class="user-tag" id="user-tag">Player: Guest</div>
+      <h2 id="gold-count" style="color: var(--accent-pink); margin-top: 10px;">0 Speed</h2>
+      <p>Total Speed: <span id="click-count">0</span></p>
+      <p><span id="gps">0</span> Speed per second</p>
+    </div>
+
+    <button class="click-btn" id="click-btn">
+      <img src="https://cdn.pokecut.com/resource/webseo/emojibackgroundremover_handletemplate1_after.webp" alt="Clicker" class="click-img">
+    </button>
+  </div>
+
+  <div class="shop-section">
+    <h2>👹 SPEED BOOSTER 👹</h2>
+    <div class="upgrade-list">
+      
+      <button class="upgrade-btn" id="buy-glove" disabled>
+        <div class="upgrade-details">
+          <img src="https://cdn.kobo.com/book-images/19ea7a00-51a1-495a-bb33-eac6a12b2bec/1200/1200/False/goon-squad-1.jpg" alt="Glove" class="upgrade-icon">
+          <div class="upgrade-info">
+            <h3>Default Homie</h3>
+            <p>Cost: <span id="glove-cost">10</span> Speed</p>
+            <p>+ 1.0 Speed/s</p>
+          </div>
+        </div>
+        <div class="upgrade-count" id="glove-count">0</div>
+      </button>
+
+      <button class="upgrade-btn" id="buy-hat" disabled>
+        <div class="upgrade-details">
+          <img src="https://cdn.pfps.gg/pfps/8674-tomboy-anime.png" alt="Cowboy Hat" class="upgrade-icon">
+          <div class="upgrade-info">
+            <h3>Tom Boy</h3>
+            <p>Cost: <span id="hat-cost">100</span> Speed</p>
+            <p>+ 5.0 Speed/s</p>
+          </div>
+        </div>
+        <div class="upgrade-count" id="hat-count">0</div>
+      </button>
+
+      <button class="upgrade-btn" id="buy-sheriff" disabled>
+        <div class="upgrade-details">
+          <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTs1uoUiXYyE3tNXUxkosc_qP9GOeZpuzc6wjmgwq75KVBWtKPT5DY3F8-5&s=10" alt="Sheriff Badge" class="upgrade-icon">
+          <div class="upgrade-info">
+            <h3>Goth Mommy</h3>
+            <p>Cost: <span id="sheriff-cost">400</span> Speed</p>
+            <p>+ 10.0 Speed/s</p>
+          </div>
+        </div>
+        <div class="upgrade-count" id="sheriff-count">0</div>
+      </button>
+
+      <button class="upgrade-btn" id="buy-mine" disabled>
+        <div class="upgrade-details">
+          <img src="https://static.wikitide.net/deathbattlewiki/b/b9/Portrait.rika.png" alt="Gold Mine" class="upgrade-icon">
+          <div class="upgrade-info">
+            <h3>True Love</h3>
+            <p>Cost: <span id="mine-cost">1,000</span> Speed</p>
+            <p>+ 100.0 Speed/s</p>
+          </div>
+        </div>
+        <div class="upgrade-count" id="mine-count">0</div>
+      </button>
+
+    </div>
+  </div>
+
+  <script>
+    // --- FIREBASE GLOBAL CONFIGURATION ---
+    const firebaseConfig = {
+      databaseURL: "https://speedwagon-5b6ed-default-rtdb.firebaseio.com/"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    // Game State
+    let currentUser = null;
+    let currentUserRef = null;
+    let gold = 0;
+    let totalClicks = 0;
+    let lastEmojiThreshold = 0;
+
+    const rewardImages = [
+      'https://i.redd.it/rt5mgn4gx8if1.jpeg',
+      'https://pbs.twimg.com/media/GSyUI9HXoAA-Jc4.jpg',
+      'https://shikimori.io/system/user_images/original/5779/1391537.jpg',
+      'https://pbs.twimg.com/media/GWJVN_1W8AAHd7s.jpg',
+      'https://hentaiporns.net/r/entradas/2025/10/1761314838_7f33a3e6659d0242cbb9fae900b24234.jpeg',
+      'https://i.ytimg.com/vi/Jra5wKaLHyU/maxresdefault.jpg',
+      'https://s1.zerochan.net/Yokoyama.Ishimi.600.3562677.jpg',
+      'https://c.wallhere.com/photos/28/35/anime_anime_girls_digital_digital_art_2D_artwork_Pixiv_ecchi-2172773.jpg!d',
+      'https://i.redd.it/x1br76n8xfyc1.jpeg',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQutoS6P3ZuNXOVhOUSBjLYHMsud_p37L9ptzlaoQaCGA&s=10',
+      'https://c4.wallpaperflare.com/wallpaper/331/651/707/cat-girl-pink-anime-girls-meow-hd-wallpaper-preview.jpg',
+      'https://pbs.twimg.com/media/G20mwreWwAEPLBW.jpg',
+      'https://scontent-syd2-1.xx.fbcdn.net/v/t1.6435-9/67847148_2297574713651814_4273631096769347584_n.jpg?stp=dst-jpg_tt6&cstp=mx1050x1650&ctp=s1050x1650&_nc_cat=108&ccb=1-7&_nc_sid=536f4a&_nc_ohc=FtNJrnTyOoAQ7kNvwFpw826&_nc_oc=AdrOTAOZR-lxxPNwKNf7UiwadOt9A_aO68HFi8ksTBySxDPyctzZmmdLhvd4x6V5FqM&_nc_zt=23&_nc_ht=scontent-syd2-1.xx&_nc_gid=ojvpoEDbvIn5-zZ1XJM6Gg&_nc_ss=7b289&oh=00_AQCDZE8Pa29eIk4oSo-5U7zFN3UJfEqqsvpWJBN1srDXBA&oe=6A8FFE5D',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQfZXXjFOMdIXHP69Tn_D-VvcSitdw8JR1E8Rr4fHUn_y4hLbmqOf4F9kk&s=10'
+    ];
+
+    const loadedWheelImages = [];
+    rewardImages.slice(0, 8).forEach(src => {
+      const img = new Image();
+      img.src = src;
+      loadedWheelImages.push(img);
+    });
+
+    let popupsEnabled = true;
+    let popupDuration = 700;
+    let darkModeEnabled = false;
+    let popupQueue = [];
+    let isShowingPopup = false;
+    let currentPopupTimer = null;
+    let isRegisterMode = false;
+
+    let upgrades = {
+      glove: { cost: 10, gps: 1.0, count: 0, costElem: 'glove-cost', countElem: 'glove-count', btnElem: 'buy-glove' },
+      hat: { cost: 100, gps: 5.0, count: 0, costElem: 'hat-cost', countElem: 'hat-count', btnElem: 'buy-hat' },
+      sheriff: { cost: 400, gps: 10.0, count: 0, costElem: 'sheriff-cost', countElem: 'sheriff-count', btnElem: 'buy-sheriff' },
+      mine: { cost: 1000, gps: 100.0, count: 0, costElem: 'mine-cost', countElem: 'mine-count', btnElem: 'buy-mine' }
+    };
+
+    const goldCountElem = document.getElementById('gold-count');
+    const clickCountElem = document.getElementById('click-count');
+    const gpsElem = document.getElementById('gps');
+    const clickBtn = document.getElementById('click-btn');
+    const emojiPopup = document.getElementById('emoji-popup');
+    const hideImgBtn = document.getElementById('hide-img-btn');
+    const darkModeBtn = document.getElementById('dark-mode-btn');
+    const leaderboardBtn = document.getElementById('leaderboard-btn');
+    const logoutBtn = document.getElementById('logout-btn');
+    const userTagElem = document.getElementById('user-tag');
+
+    const popupDurationInput = document.getElementById('popup-duration');
+    const durationValElem = document.getElementById('duration-val');
+
+    const loginModal = document.getElementById('login-modal');
+    const closeLoginBtn = document.getElementById('close-login-btn');
+    const usernameInput = document.getElementById('username-input');
+    const passwordInput = document.getElementById('password-input');
+    const authSubmitBtn = document.getElementById('auth-submit-btn');
+    const authErrorElem = document.getElementById('auth-error');
+    const toggleLoginBtn = document.getElementById('toggle-login-btn');
+    const toggleRegisterBtn = document.getElementById('toggle-register-btn');
+
+    const leaderboardModal = document.getElementById('leaderboard-modal');
+    const closeLeaderboardBtn = document.getElementById('close-leaderboard-btn');
+    const leaderboardBody = document.getElementById('leaderboard-body');
+
+    const minigamesBtn = document.getElementById('minigames-btn');
+    const minigamesModal = document.getElementById('minigames-modal');
+    const closeMinigamesBtn = document.getElementById('close-minigames-btn');
+    const openRouletteBtn = document.getElementById('open-roulette-btn');
+
+    const rouletteModal = document.getElementById('roulette-modal');
+    const closeRouletteBtn = document.getElementById('close-roulette-btn');
+    const rouletteCanvas = document.getElementById('roulette-canvas');
+    const spinRouletteBtn = document.getElementById('spin-roulette-btn');
+    const rouletteStatus = document.getElementById('roulette-status');
+
+    const openDuelBtn = document.getElementById('open-duel-btn');
+    const duelModal = document.getElementById('duel-modal');
+    const closeDuelBtn = document.getElementById('close-duel-btn');
+    const startDuelBtn = document.getElementById('start-duel-btn');
+    const duelStatusMsg = document.getElementById('duel-status-msg');
+    const duelMatchArea = document.getElementById('duel-match-area');
+    const duelArenaArea = document.getElementById('duel-arena-area');
+    const duelCountdownBox = document.getElementById('duel-countdown-box');
+    const duelCountdownImg = document.getElementById('duel-countdown-img');
+    const duelCountdownNum = document.getElementById('duel-countdown-num');
+    const duelClickBtn = document.getElementById('duel-click-btn');
+    const myDuelClicksElem = document.getElementById('my-duel-clicks');
+    const myDuelPercentElem = document.getElementById('my-duel-percent');
+    const myDuelBarElem = document.getElementById('my-duel-bar');
+    const oppDuelNameElem = document.getElementById('opp-duel-name');
+    const oppDuelPercentElem = document.getElementById('opp-duel-percent');
+    const oppDuelBarElem = document.getElementById('opp-duel-bar');
+
+    let isDuelActive = false;
+    let inDuelMatch = false;
+    let currentDuelRoomId = null;
+    let duelRole = null; 
+    let myDuelClicks = 0;
+    let oppDuelClicks = 0;
+    let opponentName = "Challenger";
+    let duelListenerRef = null;
+    let botInterval = null;
+
+    closeLoginBtn.addEventListener('click', () => {
+      if (currentUser) {
+        loginModal.classList.remove('active');
+        authErrorElem.textContent = '';
+      } else {
+        authErrorElem.textContent = 'Please log in or create an account first!';
+      }
+    });
+
+    popupDurationInput.addEventListener('input', (e) => {
+      const val = parseFloat(e.target.value);
+      durationValElem.textContent = val.toFixed(1);
+      popupDuration = val * 1000;
+      saveUserDataGlobal();
+    });
+
+    function saveUserDataGlobal() {
+      if (!currentUser) return;
+
+      db.ref('users/' + currentUser).update({
+        gold: gold,
+        totalClicks: totalClicks,
+        upgrades: {
+          glove: { count: upgrades.glove.count, cost: upgrades.glove.cost },
+          hat: { count: upgrades.hat.count, cost: upgrades.hat.cost },
+          sheriff: { count: upgrades.sheriff.count, cost: upgrades.sheriff.cost },
+          mine: { count: upgrades.mine.count, cost: upgrades.mine.cost }
+        },
+        lastThreshold: lastEmojiThreshold,
+        popupsEnabled: popupsEnabled,
+        popupDuration: popupDuration,
+        darkModeEnabled: darkModeEnabled,
+        lastUpdated: Date.now()
+      });
+    }
+
+    function loadUserData(username, userData) {
+      currentUser = username;
+      userTagElem.textContent = `Player: ${username}`;
+
+      if (userData) {
+        gold = userData.gold || 0;
+        totalClicks = userData.totalClicks || 0;
+        lastEmojiThreshold = userData.lastThreshold || 0;
+        popupsEnabled = userData.popupsEnabled !== undefined ? userData.popupsEnabled : true;
+        popupDuration = userData.popupDuration || 700;
+        darkModeEnabled = userData.darkModeEnabled !== undefined ? userData.darkModeEnabled : false;
+
+        if (userData.upgrades) {
+          for (const key in userData.upgrades) {
+            if (upgrades[key]) {
+              upgrades[key].count = userData.upgrades[key].count || 0;
+              upgrades[key].cost = userData.upgrades[key].cost || upgrades[key].cost;
+            }
+          }
+        }
+      }
+
+      popupDurationInput.value = (popupDuration / 1000).toFixed(1);
+      durationValElem.textContent = (popupDuration / 1000).toFixed(1);
+
+      document.body.classList.toggle('dark-mode', darkModeEnabled);
+      darkModeBtn.textContent = darkModeEnabled ? 'Dark Mode: ON (Q)' : 'Dark Mode (Q)';
+      
+      if (!popupsEnabled) {
+        hideImgBtn.textContent = 'Popups: OFF (E)';
+        hideImgBtn.classList.add('off');
+      } else {
+        hideImgBtn.textContent = 'Popups: ON (E)';
+        hideImgBtn.classList.remove('off');
+      }
+
+      updateUI();
+    }
+
+    toggleLoginBtn.addEventListener('click', () => {
+      isRegisterMode = false;
+      toggleLoginBtn.classList.add('active');
+      toggleRegisterBtn.classList.remove('active');
+      authSubmitBtn.textContent = 'Login';
+      authErrorElem.textContent = '';
+    });
+
+    toggleRegisterBtn.addEventListener('click', () => {
+      isRegisterMode = true;
+      toggleRegisterBtn.classList.add('active');
+      toggleLoginBtn.classList.remove('active');
+      authSubmitBtn.textContent = 'Create Account';
+      authErrorElem.textContent = '';
+    });
+
+    function handleAuthSubmit() {
+      const name = usernameInput.value.trim().replace(/[^a-zA-Z0-9]/g, "_");
+      const pwd = passwordInput.value.trim();
+
+      if (!name || !pwd) {
+        authErrorElem.textContent = 'Username and password required!';
+        return;
+      }
+
+      if (currentUserRef) currentUserRef.off();
+
+      const userRef = db.ref('users/' + name);
+
+      userRef.once('value').then((snapshot) => {
+        const userData = snapshot.val();
+
+        if (isRegisterMode) {
+          if (userData) {
+            authErrorElem.textContent = 'Global user already exists!';
+            return;
+          }
+
+          const newUserData = {
+            password: pwd,
+            gold: 0,
+            totalClicks: 0,
+            lastThreshold: 0,
+            popupsEnabled: true,
+            popupDuration: 700,
+            darkModeEnabled: false,
+            upgrades: {
+              glove: { count: 0, cost: 10 },
+              hat: { count: 0, cost: 100 },
+              sheriff: { count: 0, cost: 400 },
+              mine: { count: 0, cost: 1000 }
+            }
+          };
+
+          userRef.set(newUserData, (err) => {
+            if (err) {
+              authErrorElem.textContent = 'Error connecting to database!';
+            } else {
+              attachLiveListener(name, userRef);
+              loginModal.classList.remove('active');
+              usernameInput.value = '';
+              passwordInput.value = '';
+              authErrorElem.textContent = '';
+            }
+          });
+        } else {
+          if (!userData) {
+            authErrorElem.textContent = 'Global user not found! Create account first.';
+            return;
+          }
+          if (userData.password !== pwd) {
+            authErrorElem.textContent = 'Incorrect password!';
+            return;
+          }
+
+          attachLiveListener(name, userRef);
+          loginModal.classList.remove('active');
+          usernameInput.value = '';
+          passwordInput.value = '';
+          authErrorElem.textContent = '';
+        }
+      });
+    }
+
+    function attachLiveListener(username, userRef) {
+      currentUserRef = userRef;
+      currentUserRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+          loadUserData(username, data);
+        }
+      });
+    }
+
+    authSubmitBtn.addEventListener('click', handleAuthSubmit);
+    passwordInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') handleAuthSubmit();
+    });
+
+    logoutBtn.addEventListener('click', () => {
+      saveUserDataGlobal();
+      if (currentUserRef) currentUserRef.off();
+      currentUser = null;
+      loginModal.classList.add('active');
+    });
+
+    function renderGlobalLeaderboard() {
+      saveUserDataGlobal();
+      leaderboardBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Loading...</td></tr>';
+
+      db.ref('users').once('value')
+        .then((snapshot) => {
+          const allUsers = snapshot.val();
+          
+          if (!allUsers) {
+            leaderboardBody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No players registered yet!</td></tr>';
+            return;
+          }
+
+          const userList = Object.keys(allUsers).map(name => ({
+            name: name,
+            gold: allUsers[name].gold || 0,
+            totalClicks: allUsers[name].totalClicks || 0
+          }));
+
+          userList.sort((a, b) => b.totalClicks - a.totalClicks);
+
+          leaderboardBody.innerHTML = '';
+          userList.forEach((user, index) => {
+            const row = document.createElement('tr');
+            if (user.name === currentUser) {
+              row.classList.add('current-user-row');
+            }
+            row.innerHTML = `
+              <td>${index + 1}</td>
+              <td>${user.name}</td>
+              <td>${Math.floor(user.gold).toLocaleString()}</td>
+              <td>${Math.floor(user.totalClicks).toLocaleString()}</td>
+            `;
+            leaderboardBody.appendChild(row);
+          });
+        });
+    }
+
+    function toggleLeaderboard() {
+      if (leaderboardModal.classList.contains('active')) {
+        leaderboardModal.classList.remove('active');
+      } else {
+        renderGlobalLeaderboard();
+        leaderboardModal.classList.add('active');
+      }
+    }
+
+    leaderboardBtn.addEventListener('click', (e) => { toggleLeaderboard(); e.target.blur(); });
+    closeLeaderboardBtn.addEventListener('click', toggleLeaderboard);
+
+    minigamesBtn.addEventListener('click', (e) => {
+      minigamesModal.classList.add('active');
+      e.target.blur();
+    });
+
+    closeMinigamesBtn.addEventListener('click', () => {
+      minigamesModal.classList.remove('active');
+    });
+
+    openRouletteBtn.addEventListener('click', () => {
+      minigamesModal.classList.remove('active');
+      rouletteModal.classList.add('active');
+      drawWheel();
+    });
+
+    closeRouletteBtn.addEventListener('click', () => {
+      rouletteModal.classList.remove('active');
+    });
+
+    openDuelBtn.addEventListener('click', () => {
+      minigamesModal.classList.remove('active');
+      resetDuelUI();
+      duelModal.classList.add('active');
+    });
+
+    closeDuelBtn.addEventListener('click', () => {
+      if (inDuelMatch) return;
+      resetDuelUI();
+      duelModal.classList.remove('active');
+    });
+
+    function resetDuelUI() {
+      inDuelMatch = false;
+      isDuelActive = false;
+      myDuelClicks = 0;
+      oppDuelClicks = 0;
+      
+      if (botInterval) {
+        clearInterval(botInterval);
+        botInterval = null;
+      }
+      
+      if (duelListenerRef) {
+        duelListenerRef.off();
+        duelListenerRef = null;
+      }
+
+      duelMatchArea.style.display = 'block';
+      duelArenaArea.style.display = 'none';
+      duelCountdownBox.style.display = 'none';
+      closeDuelBtn.style.display = 'block';
+      startDuelBtn.disabled = false;
+      duelStatusMsg.textContent = "Ready to test your speed against another player?";
+      updateDuelBars();
+    }
+
+    startDuelBtn.addEventListener('click', () => {
+      if (gold < 2000) {
+        duelStatusMsg.textContent = "❌ You need at least 2,000 Speed to enter!";
+        return;
+      }
+
+      startDuelBtn.disabled = true;
+      duelStatusMsg.textContent = "Searching for an active opponent...";
+
+      const duelsRef = db.ref('duels');
+      duelsRef.once('value').then((snapshot) => {
+        const duels = snapshot.val() || {};
+        let openRoomId = null;
+
+        for (let key in duels) {
+          if (duels[key].status === 'waiting' && duels[key].p1 !== currentUser) {
+            openRoomId = key;
+            break;
+          }
+        }
+
+        if (openRoomId) {
+          currentDuelRoomId = openRoomId;
+          duelRole = 'player2';
+          opponentName = duels[openRoomId].p1;
+
+          db.ref('duels/' + openRoomId).update({
+            p2: currentUser,
+            status: 'starting'
+          }).then(() => {
+            initiateDuelMatch(false);
+          });
+        } else {
+          currentDuelRoomId = 'duel_' + Date.now();
+          duelRole = 'player1';
+
+          const roomRef = db.ref('duels/' + currentDuelRoomId);
+          roomRef.set({
+            p1: currentUser,
+            p1Clicks: 0,
+            p2Clicks: 0,
+            status: 'waiting'
+          });
+          roomRef.onDisconnect().remove();
+
+          const matchTimeout = setTimeout(() => {
+            db.ref('duels/' + currentDuelRoomId).once('value').then((snap) => {
+              const data = snap.val();
+              if (data && data.status === 'waiting') {
+                opponentName = "ChallengerBot";
+                db.ref('duels/' + currentDuelRoomId).update({
+                  p2: opponentName,
+                  status: 'starting'
+                });
+                initiateDuelMatch(true);
+              }
+            });
+          }, 3000);
+
+          db.ref('duels/' + currentDuelRoomId + '/status').on('value', (snap) => {
+            if (snap.val() === 'starting' && !inDuelMatch) {
+              clearTimeout(matchTimeout);
+              db.ref('duels/' + currentDuelRoomId + '/p2').once('value').then((p2Snap) => {
+                opponentName = p2Snap.val() || "Challenger";
+                initiateDuelMatch(false);
+              });
+            }
+          });
+        }
+      });
+    });
+
+    function initiateDuelMatch(isBot = false) {
+      gold -= 2000;
+      updateUI();
+      saveUserDataGlobal();
+
+      inDuelMatch = true;
+      myDuelClicks = 0;
+      oppDuelClicks = 0;
+
+      if (botInterval) {
+        clearInterval(botInterval);
+        botInterval = null;
+      }
+
+      closeDuelBtn.style.display = 'none';
+      duelMatchArea.style.display = 'none';
+      duelArenaArea.style.display = 'block';
+
+      oppDuelNameElem.textContent = `${opponentName.toUpperCase()} (0/100)`;
+      updateDuelBars();
+
+      duelCountdownBox.style.display = 'flex';
+      let count = 3;
+
+      function updateCountdown() {
+        if (count > 0) {
+          const randImg = rewardImages[Math.floor(Math.random() * rewardImages.length)];
+          duelCountdownImg.src = randImg;
+          duelCountdownNum.textContent = count;
+          count--;
+          setTimeout(updateCountdown, 1000);
+        } else {
+          duelCountdownBox.style.display = 'none';
+          isDuelActive = true;
+          
+          if (isBot) {
+            startBotOpponent();
+          } else {
+            listenToLiveDuel();
+          }
+        }
+      }
+
+      updateCountdown();
+    }
+
+    function listenToLiveDuel() {
+      duelListenerRef = db.ref('duels/' + currentDuelRoomId);
+      const oppKey = duelRole === 'player1' ? 'p2Clicks' : 'p1Clicks';
+
+      duelListenerRef.on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (!data || !isDuelActive) return;
+
+        oppDuelClicks = data[oppKey] || 0;
+        updateDuelBars();
+
+        if (oppDuelClicks >= 100 && isDuelActive) {
+          endDuel(false);
+        }
+      });
+    }
+
+    function startBotOpponent() {
+      botInterval = setInterval(() => {
+        if (!isDuelActive) return;
+        oppDuelClicks += Math.floor(Math.random() * 3) + 1;
+        updateDuelBars();
+
+        if (oppDuelClicks >= 100) {
+          clearInterval(botInterval);
+          botInterval = null;
+          endDuel(false);
+        }
+      }, 150);
+    }
+
+    function handleDuelClick() {
+      if (!isDuelActive) return;
+
+      myDuelClicks++;
+      registerClicks(1);
+      updateDuelBars();
+
+      if (currentDuelRoomId && duelRole && opponentName !== "ChallengerBot") {
+        const myKey = duelRole === 'player1' ? 'p1Clicks' : 'p2Clicks';
+        db.ref('duels/' + currentDuelRoomId).update({ [myKey]: myDuelClicks });
+      }
+
+      if (myDuelClicks >= 100) {
+        endDuel(true);
+      }
+    }
+
+    duelClickBtn.addEventListener('click', handleDuelClick);
+
+    function updateDuelBars() {
+      myDuelClicksElem.textContent = Math.min(myDuelClicks, 100);
+      myDuelPercentElem.textContent = `${Math.min(myDuelClicks, 100)}%`;
+      myDuelBarElem.style.width = `${Math.min(myDuelClicks, 100)}%`;
+
+      oppDuelNameElem.textContent = `${opponentName.toUpperCase()} (${Math.min(oppDuelClicks, 100)}/100)`;
+      oppDuelPercentElem.textContent = `${Math.min(oppDuelClicks, 100)}%`;
+      oppDuelBarElem.style.width = `${Math.min(oppDuelClicks, 100)}%`;
+    }
+
+    function endDuel(won) {
+      isDuelActive = false;
+      inDuelMatch = false;
+
+      if (botInterval) {
+        clearInterval(botInterval);
+        botInterval = null;
+      }
+      if (duelListenerRef) {
+        duelListenerRef.off();
+        duelListenerRef = null;
+      }
+
+      closeDuelBtn.style.display = 'block';
+
+      if (won) {
+        gold += 4000;
+        alert(`🏆 VICTORY! You won the SpeedDuel and earned 2,000 Speed!`);
+      } else {
+        alert(`💀 DEFEAT! You lost the duel and forfeited 2,000 Speed.`);
+      }
+
+      updateUI();
+      saveUserDataGlobal();
+      resetDuelUI();
+    }
+
+   // Updated Duel Spacebar Handler
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'Space' && isDuelActive) {
+    e.preventDefault();
+    if (e.repeat) return; // Disables holding down Spacebar
+    duelClickBtn.classList.add('active-key');
+    handleDuelClick();
+  }
+});
+
+// Updated Main Game Keyboard Handler
+window.addEventListener('keydown', (e) => {
+  if (!currentUser && loginModal.classList.contains('active')) return;
+  if (isDuelActive) return; 
+
+  if (e.code === 'Space') {
+    e.preventDefault();
+    if (e.repeat) return; // Disables holding down Spacebar
+    clickBtn.classList.add('active-key');
+    handleMainClick();
+  }
+});
+
+    const roulettePossibilities = [
+      { text: '+100', type: 'add', val: 100 },
+      { text: '+1', type: 'add', val: 1 },
+      { text: '+1000', type: 'add', val: 1000 },
+      { text: '+10000', type: 'add', val: 10000 },
+      { text: 'x4', type: 'mult', val: 4 },
+      { text: 'x2', type: 'mult', val: 2 },
+      { text: 'x8', type: 'mult', val: 8 },
+      { text: 'x0.6', type: 'mult', val: 0.6 },
+      { text: 'x0.1', type: 'mult', val: 0.1 },
+      { text: 'x0.2', type: 'mult', val: 0.2 }
+    ];
+
+    const sliceCount = 8;
+    let currentWheelAngle = 0;
+    let isSpinning = false;
+    let wheelSlices = [];
+
+    function setupWheelSlices() {
+      wheelSlices = [];
+      for (let i = 0; i < sliceCount; i++) {
+        const outcome = roulettePossibilities[Math.floor(Math.random() * roulettePossibilities.length)];
+        const img = loadedWheelImages[i % loadedWheelImages.length];
+        wheelSlices.push({ outcome, img });
+      }
+    }
+    setupWheelSlices();
+
+    function drawWheel() {
+      const ctx = rouletteCanvas.getContext('2d');
+      const width = rouletteCanvas.width;
+      const height = rouletteCanvas.height;
+      const centerX = width / 2;
+      const centerY = height / 2;
+      const radius = width / 2 - 5;
+      const sliceAngle = (2 * Math.PI) / sliceCount;
+
+      ctx.clearRect(0, 0, width, height);
+      const colors = ['#f72585', '#b5179e', '#7209b7', '#560bad', '#480ca8', '#3f37c9', '#4361ee', '#4895ef'];
+
+      for (let i = 0; i < sliceCount; i++) {
+        const startAngle = currentWheelAngle + i * sliceAngle;
+        const endAngle = startAngle + sliceAngle;
+
+        ctx.beginPath();
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, startAngle, endAngle);
+        ctx.fillStyle = colors[i % colors.length];
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(startAngle + sliceAngle / 2);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 16px Courier New';
+        ctx.textAlign = 'right';
+        ctx.fillText(wheelSlices[i].outcome.text, radius - 15, 5);
+
+        if (wheelSlices[i].img.complete && wheelSlices[i].img.naturalWidth !== 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(radius - 65, 0, 15, 0, Math.PI * 2);
+          ctx.clip();
+          ctx.drawImage(wheelSlices[i].img, radius - 80, -15, 30, 30);
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    spinRouletteBtn.addEventListener('click', () => {
+      if (isSpinning) return;
+      if (gold < 1000) {
+        rouletteStatus.textContent = "❌ Not enough Speed! Need 1,000.";
+        return;
+      }
+
+      gold -= 1000;
+      updateUI();
+      saveUserDataGlobal();
+
+      isSpinning = true;
+      spinRouletteBtn.disabled = true;
+      rouletteStatus.textContent = "Spinning... 🌀";
+
+      wheelSlices.forEach(slice => {
+        slice.outcome = roulettePossibilities[Math.floor(Math.random() * roulettePossibilities.length)];
+      });
+
+      const randomRotations = 5 + Math.random() * 5; 
+      const targetAngle = currentWheelAngle + randomRotations * Math.PI * 2;
+      const spinDuration = 4000; 
+      const startTime = performance.now();
+
+      function animateSpin(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / spinDuration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentWheelAngle = currentWheelAngle + (targetAngle - currentWheelAngle) * (easeOut * 0.08);
+
+        drawWheel();
+
+        if (progress < 1) {
+          requestAnimationFrame(animateSpin);
+        } else {
+          isSpinning = false;
+          spinRouletteBtn.disabled = false;
+
+          const normalizedAngle = (currentWheelAngle % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI);
+          const pointerAngle = (1.5 * Math.PI - normalizedAngle + 2 * Math.PI) % (2 * Math.PI);
+          const winningIndex = Math.floor(pointerAngle / ((2 * Math.PI) / sliceCount)) % sliceCount;
+          
+          applyRouletteReward(wheelSlices[winningIndex].outcome);
+        }
+      }
+
+      requestAnimationFrame(animateSpin);
+    });
+
+    function applyRouletteReward(outcome) {
+      if (outcome.type === 'add') {
+        gold += outcome.val;
+        totalClicks += outcome.val;
+        rouletteStatus.textContent = `🎉 You won ${outcome.text} Speed!`;
+      } else if (outcome.type === 'mult') {
+        const oldGold = gold;
+        gold = Math.floor(gold * outcome.val);
+        const diff = gold - oldGold;
+        if (diff > 0) totalClicks += diff;
+        rouletteStatus.textContent = `🔥 Multiplier hit! ${outcome.text} (${Math.floor(gold).toLocaleString()} Speed)`;
+      }
+
+      updateUI();
+      saveUserDataGlobal();
+    }
+
+    function toggleDarkMode() {
+      darkModeEnabled = !darkModeEnabled;
+      document.body.classList.toggle('dark-mode', darkModeEnabled);
+      darkModeBtn.textContent = darkModeEnabled ? 'Dark Mode: ON (Q)' : 'Dark Mode (Q)';
+      saveUserDataGlobal();
+    }
+
+    function togglePopups() {
+      popupsEnabled = !popupsEnabled;
+      if (!popupsEnabled) {
+        popupQueue = [];
+        isShowingPopup = false;
+        clearTimeout(currentPopupTimer);
+        emojiPopup.classList.remove('show');
+        
+        hideImgBtn.textContent = 'Popups: OFF (E)';
+        hideImgBtn.classList.add('off');
+      } else {
+        hideImgBtn.textContent = 'Popups: ON (E)';
+        hideImgBtn.classList.remove('off');
+      }
+      saveUserDataGlobal();
+    }
+
+    function triggerEmojiReward() {
+      if (!popupsEnabled || rewardImages.length === 0) return;
+      popupQueue.push(rewardImages[Math.floor(Math.random() * rewardImages.length)]);
+      processQueue();
+    }
+
+    function processQueue() {
+      if (!popupsEnabled || isShowingPopup || popupQueue.length === 0) return;
+
+      isShowingPopup = true;
+      const currentImgUrl = popupQueue.shift();
+
+      let displayTime = popupDuration;
+      let gapTime = 150;
+
+      if (popupQueue.length > 5) {
+        displayTime = Math.min(popupDuration, 200);
+        gapTime = 50;
+      } else if (popupQueue.length > 2) {
+        displayTime = Math.min(popupDuration, 350);
+        gapTime = 100;
+      }
+
+      emojiPopup.innerHTML = `<img src="${currentImgUrl}" alt="Reward Popup">`;
+      emojiPopup.classList.add('show');
+
+      currentPopupTimer = setTimeout(() => {
+        emojiPopup.classList.remove('show');
+        currentPopupTimer = setTimeout(() => {
+          isShowingPopup = false;
+          processQueue();
+        }, gapTime);
+      }, displayTime);
+    }
+
+    function registerClicks(amount) {
+      totalClicks += amount;
+      const currentThreshold = Math.floor(totalClicks / 10) * 10;
+      if (currentThreshold > lastEmojiThreshold && currentThreshold > 0) {
+        lastEmojiThreshold = currentThreshold;
+        triggerEmojiReward();
+      }
+    }
+
+    function handleMainClick() {
+      if (!currentUser || isDuelActive) return;
+      gold++;
+      registerClicks(1);
+      updateUI();
+    }
+
+    clickBtn.addEventListener('click', () => handleMainClick());
+
+    hideImgBtn.addEventListener('click', (e) => { togglePopups(); e.target.blur(); });
+    darkModeBtn.addEventListener('click', (e) => { toggleDarkMode(); e.target.blur(); });
+
+    window.addEventListener('keydown', (e) => {
+      if (!currentUser && loginModal.classList.contains('active')) return;
+      if (isDuelActive) return; 
+
+      if (e.code === 'Space') {
+        e.preventDefault();
+        clickBtn.classList.add('active-key');
+        handleMainClick();
+      } else if (e.key === 'e' || e.key === 'E') {
+        togglePopups();
+      } else if (e.key === 'q' || e.key === 'Q') {
+        toggleDarkMode();
+      } else if (e.key === 'l' || e.key === 'L') {
+        toggleLeaderboard();
+      } else if (e.key === 'm' || e.key === 'M') {
+        minigamesModal.classList.toggle('active');
+      }
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.code === 'Space' && !isDuelActive) {
+        clickBtn.classList.remove('active-key');
+      }
+    });
+
+    function buyUpgrade(key) {
+      const upgrade = upgrades[key];
+      if (gold >= upgrade.cost) {
+        gold -= upgrade.cost;
+        upgrade.count++;
+        upgrade.cost = Math.floor(upgrade.cost * 1.15);
+        updateUI();
+        saveUserDataGlobal();
+      }
+    }
+
+    document.getElementById('buy-glove').addEventListener('click', (e) => { buyUpgrade('glove'); e.target.blur(); });
+    document.getElementById('buy-hat').addEventListener('click', (e) => { buyUpgrade('hat'); e.target.blur(); });
+    document.getElementById('buy-sheriff').addEventListener('click', (e) => { buyUpgrade('sheriff'); e.target.blur(); });
+    document.getElementById('buy-mine').addEventListener('click', (e) => { buyUpgrade('mine'); e.target.blur(); });
+
+    function getTotalGPS() {
+      let total = 0;
+      for (const key in upgrades) {
+        total += upgrades[key].count * upgrades[key].gps;
+      }
+      return total;
+    }
+
+    function updateUI() {
+      goldCountElem.textContent = `${Math.floor(gold).toLocaleString()} Speed`;
+      clickCountElem.textContent = Math.floor(totalClicks).toLocaleString();
+      gpsElem.textContent = getTotalGPS().toFixed(1);
+
+      for (const key in upgrades) {
+        const item = upgrades[key];
+        document.getElementById(item.costElem).textContent = item.cost.toLocaleString();
+        document.getElementById(item.countElem).textContent = item.count;
+        document.getElementById(item.btnElem).disabled = gold < item.cost;
+      }
+    }
+
+    setInterval(() => {
+      if (!currentUser || isDuelActive) return;
+
+      const gps = getTotalGPS();
+      const incomePerTick = gps / 10;
+      
+      gold += incomePerTick;
+      if (gps > 0) registerClicks(incomePerTick);
+      updateUI();
+    }, 100);
+
+    setInterval(() => {
+      if (currentUser) saveUserDataGlobal();
+    }, 5000);
+
+    window.addEventListener('beforeunload', () => {
+      if (currentUser) saveUserDataGlobal();
+    });
+  </script>
+</body>
+</html>
