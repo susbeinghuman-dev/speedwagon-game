@@ -638,7 +638,7 @@
       <div class="duel-countdown-overlay" id="duel-countdown-box" style="display: none;">
         <img id="duel-countdown-img" class="duel-countdown-img" src="" alt="Duel Countdown">
         <div class="duel-countdown-num" id="duel-countdown-num">3</div>
-        <p style="color: #fff; margin-top: 10px; font-weight: bold;">GET READY TO CLICK!</p>
+        <p style="color: #fff; margin-top: 10px; font-weight: bold;">GOONERS!!! READY TO CLICK!</p>
       </div>
 
       <div id="duel-match-area" style="margin: 20px 0;">
@@ -843,7 +843,6 @@
       mine: { cost: 1000, gps: 100.0, count: 0, costElem: 'mine-cost', countElem: 'mine-count', btnElem: 'buy-mine' },
       rocket: { cost: 10000, gps: 800.0, count: 0, costElem: 'rocket-cost', countElem: 'rocket-count', btnElem: 'buy-rocket' },
       gun: { cost: 50000, gps: 2000.0, count: 0, costElem: 'gun-cost', countElem: 'gun-count', btnElem: 'buy-gun' }
-
     };
 
     const goldCountElem = document.getElementById('gold-count');
@@ -1693,6 +1692,7 @@ window.addEventListener('keydown', (e) => {
     document.getElementById('buy-sheriff').addEventListener('click', (e) => { buyUpgrade('sheriff'); e.target.blur(); });
     document.getElementById('buy-mine').addEventListener('click', (e) => { buyUpgrade('mine'); e.target.blur(); });
     document.getElementById('buy-rocket').addEventListener('click', (e) => { buyUpgrade('rocket'); e.target.blur(); });
+    document.getElementById('buy-gun').addEventListener('click', (e) => { buyUpgrade('gun'); e.target.blur(); });
 
     function getTotalGPS() {
       let total = 0;
