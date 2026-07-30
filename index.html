@@ -713,7 +713,8 @@
       </div>
 
       <div id="duel-match-area" style="margin: 20px 0;">
-        <p id="duel-status-msg" style="margin-bottom: 15px; font-weight: bold;">Ready to test your speed against another player?</p>
+        <p id="duel-status-msg" style="margin-bottom: 8px; font-weight: bold;">Ready to test your speed against another player?</p>
+        <p id="duel-connection-timer" class="connection-timer"></p>
         <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:12px;">
           <label for="duel-bet-input" style="font-size:0.9rem; color:var(--text-sub);">Bet:</label>
           <input type="number" id="duel-bet-input" min="0" value="0" style="width:120px; padding:8px; border-radius:8px; border:2px solid var(--border-color); background:transparent; color:var(--text-main);">
@@ -1286,7 +1287,9 @@
         duelConnectionInterval = null;
       }
 
-      duelConnectionTimerElem.textContent = '';
+      if (duelConnectionTimerElem) {
+        duelConnectionTimerElem.textContent = '';
+      }
 
       duelMatchArea.style.display = 'block';
       duelArenaArea.style.display = 'none';
