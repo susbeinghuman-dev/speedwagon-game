@@ -1003,7 +1003,8 @@
     let duelHasEnded = false;
     let duelListenerRef = null;
     let botInterval = null;
-    let currentDuelBet = 0;
+    let currentDuelPot = 0;
+    let currentDuelOwnBet = 0;
 
     closeLoginBtn.addEventListener('click', () => {
       if (currentUser) {
@@ -1366,9 +1367,8 @@
         const duels = snapshot.val() || {};
         for (let key in duels) {
           const room = duels[key];
-          const roomBet = room.bet || 0;
-          if (room.status === 'waiting' && room.p1 !== currentUser && roomBet === bet) {
-            return { roomId: key, player: room.p1 };
+          if (room.status === 'waiting' && room.p1 !== currentUser) {
+            return { roomId: key, player: room.p1, bet: room.p1Bet || 0 };
           }
         }
         return null;
@@ -1403,6 +1403,7 @@
             return room;
           }
           room.p2 = currentUser;
+          room.p2Bet = currentDuelOwnBet;
           room.status = 'starting';
           return room;
         }, (err, committed, snapshot) => {
@@ -1436,6 +1437,7 @@
       duelConnectionSeconds = 10;
       updateDuelConnectionTimer();
       duelCandidate = null;
+      currentDuelOwnBet = bet;
       if (choosePlayerBtn) {
         choosePlayerBtn.style.display = 'none';
         choosePlayerBtn.disabled = false;
@@ -1454,7 +1456,7 @@
             candidateFound = true;
             duelCandidate = candidate;
             if (duelCandidateInfo) {
-              duelCandidateInfo.textContent = `Detected waiting player ${candidate.player}. Click choose to challenge them.`;
+              duelCandidateInfo.textContent = `Detected waiting player ${candidate.player} with bet ${candidate.bet.toLocaleString()}. Click choose to challenge them.`;
             }
             if (choosePlayerBtn) {
               choosePlayerBtn.style.display = 'inline-block';
@@ -1469,7 +1471,8 @@
               p1Clicks: 0,
               p2Clicks: 0,
               status: 'waiting',
-              bet: bet
+              p1Bet: bet,
+              p2Bet: 0
             });
             roomRef.onDisconnect().remove();
             db.ref('duels/' + currentDuelRoomId).on('value', (snap) => {
@@ -1510,21 +1513,23 @@
 
     function initiateDuelMatch(isBot = false) {
       // Fetch bet from room (if any) and deduct entry + bet from local player
-      currentDuelBet = 0;
+      currentDuelPot = 0;
+      currentDuelOwnBet = 0;
       if (currentDuelRoomId) {
-        db.ref('duels/' + currentDuelRoomId + '/bet').once('value').then((snap) => {
-          const betVal = snap.val() || 0;
-          currentDuelBet = betVal;
+        db.ref('duels/' + currentDuelRoomId).once('value').then((snap) => {
+          const data = snap.val() || {};
+          const p1Bet = data.p1Bet || 0;
+          const p2Bet = data.p2Bet || 0;
+          currentDuelPot = p1Bet + p2Bet;
+          currentDuelOwnBet = duelRole === 'player1' ? p1Bet : p2Bet;
 
-          // Deduct entry fee and bet from this player's gold
           gold -= 2000;
-          if (betVal && betVal > 0) gold -= betVal;
+          if (currentDuelOwnBet > 0) gold -= currentDuelOwnBet;
           updateUI();
           saveUserDataGlobal();
 
           startDuelAfterDeduction(isBot);
         }).catch(() => {
-          // fallback: still start
           gold -= 2000;
           updateUI();
           saveUserDataGlobal();
@@ -1676,9 +1681,8 @@
       closeDuelBtn.style.display = 'block';
 
       if (won) {
-        // standard duel reward
         gold += 4000;
-        const pot = currentDuelBet && currentDuelBet > 0 ? currentDuelBet * 2 : 0;
+        const pot = currentDuelPot > 0 ? currentDuelPot : 0;
         if (pot > 0) {
           gold += pot;
           alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed plus ${pot.toLocaleString()} Speed from bets! 🥰`);
@@ -1686,11 +1690,12 @@
           alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed! 🥰`);
         }
       } else {
-        const lostBetMsg = currentDuelBet && currentDuelBet > 0 ? ` and forfeited ${currentDuelBet.toLocaleString()} Speed bet` : '';
+        const lostBetMsg = currentDuelOwnBet > 0 ? ` and forfeited ${currentDuelOwnBet.toLocaleString()} Speed bet` : '';
         alert(`BRUHHHH! You lost the duel and forfeited 2,000 Speed${lostBetMsg}. 🥲`);
       }
 
-      currentDuelBet = 0;
+      currentDuelPot = 0;
+      currentDuelOwnBet = 0;
 
       updateUI();
       saveUserDataGlobal();
@@ -1726,7 +1731,7 @@
 
       const localKey = duelRole === 'player1' ? 'p1' : 'p2';
       const localWon = data.winner === localKey;
-      const pot = currentDuelBet && currentDuelBet > 0 ? currentDuelBet * 2 : 0;
+      const pot = currentDuelPot > 0 ? currentDuelPot : 0;
 
       if (localWon) {
         gold += 4000;
@@ -1737,11 +1742,12 @@
           alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed! 🥰`);
         }
       } else {
-        const lostBetMsg = pot > 0 ? ` and forfeited ${pot / 2} Speed bet` : '';
+        const lostBetMsg = currentDuelOwnBet > 0 ? ` and forfeited ${currentDuelOwnBet.toLocaleString()} Speed bet` : '';
         alert(`BRUHHHH! Your opponent won the duel${lostBetMsg}. 🥲`);
       }
 
-      currentDuelBet = 0;
+      currentDuelPot = 0;
+      currentDuelOwnBet = 0;
       updateUI();
       saveUserDataGlobal();
       resetDuelUI();
