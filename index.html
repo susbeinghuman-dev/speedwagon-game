@@ -643,6 +643,11 @@
 
       <div id="duel-match-area" style="margin: 20px 0;">
         <p id="duel-status-msg" style="margin-bottom: 15px; font-weight: bold;">Ready to test your speed against another player?</p>
+        <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:12px;">
+          <label for="duel-bet-input" style="font-size:0.9rem; color:var(--text-sub);">Bet:</label>
+          <input type="number" id="duel-bet-input" min="0" value="0" style="width:120px; padding:8px; border-radius:8px; border:2px solid var(--border-color); background:transparent; color:var(--text-main);">
+          <span style="font-size:0.85rem; color:var(--subtext-color);">(loser pays winner)</span>
+        </div>
         <button class="submit-btn" id="start-duel-btn" style="background: #e63946;">Find Match (2,000 Speed)</button>
       </div>
 
@@ -894,6 +899,7 @@
     const duelCountdownImg = document.getElementById('duel-countdown-img');
     const duelCountdownNum = document.getElementById('duel-countdown-num');
     const duelClickBtn = document.getElementById('duel-click-btn');
+    const duelBetInput = document.getElementById('duel-bet-input');
     const myDuelClicksElem = document.getElementById('my-duel-clicks');
     const myDuelPercentElem = document.getElementById('my-duel-percent');
     const myDuelBarElem = document.getElementById('my-duel-bar');
@@ -910,6 +916,7 @@
     let opponentName = "Challenger";
     let duelListenerRef = null;
     let botInterval = null;
+    let currentDuelBet = 0;
 
     closeLoginBtn.addEventListener('click', () => {
       if (currentUser) {
@@ -1203,8 +1210,13 @@
     }
 
     startDuelBtn.addEventListener('click', () => {
-      if (gold < 2000) {
-        duelStatusMsg.textContent = "❌ You need at least 2,000 Speed to enter!";
+      // Read bet from UI
+      let bet = 0;
+      if (duelBetInput) bet = parseInt(duelBetInput.value, 10) || 0;
+      if (bet < 0) bet = 0;
+
+      if (gold < 2000 + bet) {
+        duelStatusMsg.textContent = `❌ You need at least ${ (2000 + bet).toLocaleString() } Speed (entry + bet)!`;
         return;
       }
 
@@ -1217,7 +1229,9 @@
         let openRoomId = null;
 
         for (let key in duels) {
-          if (duels[key].status === 'waiting' && duels[key].p1 !== currentUser) {
+          // only match rooms with same bet amount
+          const roomBet = duels[key].bet || 0;
+          if (duels[key].status === 'waiting' && duels[key].p1 !== currentUser && roomBet === bet) {
             openRoomId = key;
             break;
           }
@@ -1227,6 +1241,13 @@
           currentDuelRoomId = openRoomId;
           duelRole = 'player2';
           opponentName = duels[openRoomId].p1;
+
+          // ensure joining player still has funds for the bet (double-check)
+          if (gold < bet + 2000) {
+            duelStatusMsg.textContent = `❌ You don't have enough Speed to cover the bet of ${bet}.`;
+            startDuelBtn.disabled = false;
+            return;
+          }
 
           db.ref('duels/' + openRoomId).update({
             p2: currentUser,
@@ -1243,7 +1264,8 @@
             p1: currentUser,
             p1Clicks: 0,
             p2Clicks: 0,
-            status: 'waiting'
+            status: 'waiting',
+            bet: bet
           });
           roomRef.onDisconnect().remove();
 
@@ -1275,10 +1297,38 @@
     });
 
     function initiateDuelMatch(isBot = false) {
+      // Fetch bet from room (if any) and deduct entry + bet from local player
+      currentDuelBet = 0;
+      if (currentDuelRoomId) {
+        db.ref('duels/' + currentDuelRoomId + '/bet').once('value').then((snap) => {
+          const betVal = snap.val() || 0;
+          currentDuelBet = betVal;
+
+          // Deduct entry fee and bet from this player's gold
+          gold -= 2000;
+          if (betVal && betVal > 0) gold -= betVal;
+          updateUI();
+          saveUserDataGlobal();
+
+          startDuelAfterDeduction(isBot);
+        }).catch(() => {
+          // fallback: still start
+          gold -= 2000;
+          updateUI();
+          saveUserDataGlobal();
+          startDuelAfterDeduction(isBot);
+        });
+        return;
+      }
+
+      // If no room id for some reason, proceed with default deduction
       gold -= 2000;
       updateUI();
       saveUserDataGlobal();
+      startDuelAfterDeduction(isBot);
+    }
 
+    function startDuelAfterDeduction(isBot) {
       inDuelMatch = true;
       myDuelClicks = 0;
       oppDuelClicks = 0;
@@ -1396,11 +1446,23 @@
       closeDuelBtn.style.display = 'block';
 
       if (won) {
+        // standard duel reward
         gold += 4000;
-        alert(`GOOD BOY You won the SpeedDuel and earned 2,000 Speed! 🥰`);
+        // award bet pot (both players' bets)
+        const pot = currentDuelBet && currentDuelBet > 0 ? currentDuelBet * 2 : 0;
+        if (pot > 0) {
+          gold += pot;
+          alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed plus ${pot.toLocaleString()} Speed from bets! 🥰`);
+        } else {
+          alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed! 🥰`);
+        }
       } else {
-        alert(`BRUHHHH! You lost the duel and forfeited 2,000 Speed. 🥲`);
+        const lostBetMsg = currentDuelBet && currentDuelBet > 0 ? ` and forfeited ${currentDuelBet.toLocaleString()} Speed bet` : '';
+        alert(`BRUHHHH! You lost the duel and forfeited 2,000 Speed${lostBetMsg}. 🥲`);
       }
+
+      // clear stored bet
+      currentDuelBet = 0;
 
       updateUI();
       saveUserDataGlobal();
