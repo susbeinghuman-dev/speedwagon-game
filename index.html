@@ -423,6 +423,26 @@
       font-weight: bold;
     }
 
+    .connection-timer {
+      font-size: 0.95rem;
+      color: var(--text-sub);
+      margin-bottom: 10px;
+      min-height: 1.2em;
+    }
+
+    .giveup-btn {
+      width: 180px;
+      border-radius: 12px;
+      font-weight: bold;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      transition: transform 0.1s ease, opacity 0.2s ease;
+    }
+
+    .giveup-btn:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
     .minigame-list {
       display: flex;
       flex-direction: column;
@@ -557,6 +577,57 @@
     .duel-click-target-btn:active, .duel-click-target-btn.active-key {
       transform: scale(0.92);
     }
+
+    .connection-timer {
+      font-size: 0.95rem;
+      color: var(--text-sub);
+      margin-bottom: 10px;
+      min-height: 1.2em;
+    }
+
+    .giveup-btn {
+      width: 180px;
+      border-radius: 12px;
+      font-weight: bold;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      transition: transform 0.1s ease, opacity 0.2s ease;
+    }
+
+    .giveup-btn:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+
+    #click-effect-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 900;
+    }
+
+    .click-effect {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.9);
+      background-size: cover;
+      background-position: center;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(0.8);
+      animation: click-effect-anim 900ms ease-out forwards;
+    }
+
+    @keyframes click-effect-anim {
+      0% { opacity: 1; transform: translate(-50%, -50%) scale(0.9); }
+      70% { opacity: 0.9; transform: translate(-50%, -160%) scale(1.1); }
+      100% { opacity: 0; transform: translate(-50%, -220%) scale(1.3); }
+    }
   </style>
 </head>
 <body>
@@ -671,11 +742,13 @@
         </div>
 
         <button class="duel-click-target-btn" id="duel-click-btn">CLICK! (M1 / Space)</button>
+        <button class="top-control-btn giveup-btn" id="duel-giveup-btn" style="margin: 12px auto 0; background: #222; color: #fff; border: 2px solid #ff6b6b;">I Give Up</button>
       </div>
     </div>
   </div>
 
   <div id="emoji-popup"></div>
+  <div id="click-effect-container"></div>
 
   <div class="game-section">
     <div class="controls-container">
@@ -906,9 +979,16 @@
     const oppDuelNameElem = document.getElementById('opp-duel-name');
     const oppDuelPercentElem = document.getElementById('opp-duel-percent');
     const oppDuelBarElem = document.getElementById('opp-duel-bar');
+    const duelConnectionTimerElem = document.getElementById('duel-connection-timer');
+    const duelGiveupBtn = document.getElementById('duel-giveup-btn');
+    const clickEffectContainer = document.getElementById('click-effect-container');
 
     let isDuelActive = false;
     let inDuelMatch = false;
+    let duelConnectionInterval = null;
+    let duelMatchTimeout = null;
+    let duelConnectionSeconds = 10;
+    let botProfile = null;
     let currentDuelRoomId = null;
     let duelRole = null; 
     let myDuelClicks = 0;
@@ -1189,7 +1269,8 @@
       isDuelActive = false;
       myDuelClicks = 0;
       oppDuelClicks = 0;
-      
+      duelConnectionSeconds = 10;
+
       if (botInterval) {
         clearInterval(botInterval);
         botInterval = null;
@@ -1200,6 +1281,13 @@
         duelListenerRef = null;
       }
 
+      if (duelConnectionInterval) {
+        clearInterval(duelConnectionInterval);
+        duelConnectionInterval = null;
+      }
+
+      duelConnectionTimerElem.textContent = '';
+
       duelMatchArea.style.display = 'block';
       duelArenaArea.style.display = 'none';
       duelCountdownBox.style.display = 'none';
@@ -1209,8 +1297,82 @@
       updateDuelBars();
     }
 
+    function updateDuelConnectionTimer() {
+      if (!duelConnectionTimerElem) return;
+      duelConnectionTimerElem.textContent = `Searching for a real opponent... ${duelConnectionSeconds}s remaining`;
+    }
+
+    function stopDuelConnectionTimer() {
+      if (duelConnectionInterval) {
+        clearInterval(duelConnectionInterval);
+        duelConnectionInterval = null;
+      }
+      if (duelConnectionTimerElem) {
+        duelConnectionTimerElem.textContent = '';
+      }
+    }
+
+    function chooseBotProfile() {
+      const profiles = [
+        { label: 'Really Fast', minStep: 4, maxStep: 7, interval: 90 },
+        { label: 'Fast', minStep: 3, maxStep: 5, interval: 120 },
+        { label: 'Average', minStep: 2, maxStep: 4, interval: 160 },
+        { label: 'Slow', minStep: 1, maxStep: 2, interval: 220 },
+        { label: 'Really Slow', minStep: 0, maxStep: 1, interval: 280 }
+      ];
+      return profiles[Math.floor(Math.random() * profiles.length)];
+    }
+
+    function spawnClickEffect(baseElement) {
+      if (!clickEffectContainer || !baseElement) return;
+      const effect = document.createElement('div');
+      effect.className = 'click-effect';
+      const image = rewardImages[Math.floor(Math.random() * rewardImages.length)];
+      effect.style.backgroundImage = `url(${image})`;
+
+      const rect = baseElement.getBoundingClientRect();
+      const containerRect = clickEffectContainer.getBoundingClientRect();
+      const x = rect.left + rect.width / 2 - containerRect.left;
+      const y = rect.top + rect.height / 2 - containerRect.top;
+      effect.style.left = `${x}px`;
+      effect.style.top = `${y}px`;
+
+      clickEffectContainer.appendChild(effect);
+      setTimeout(() => {
+        effect.remove();
+      }, 900);
+    }
+
+    function pollOpenDuelRoom(bet) {
+      return db.ref('duels').once('value').then((snapshot) => {
+        const duels = snapshot.val() || {};
+        for (let key in duels) {
+          const room = duels[key];
+          const roomBet = room.bet || 0;
+          if (room.status === 'waiting' && room.p1 !== currentUser && roomBet === bet) {
+            currentDuelRoomId = key;
+            duelRole = 'player2';
+            opponentName = room.p1;
+            return true;
+          }
+        }
+        return false;
+      });
+    }
+
+    function startDuelFallbackBot() {
+      if (inDuelMatch || isDuelActive) return;
+      const profile = chooseBotProfile();
+      botProfile = profile;
+      opponentName = `ChallengerBot (${profile.label})`;
+      if (currentDuelRoomId) {
+        db.ref('duels/' + currentDuelRoomId).update({ p2: opponentName, status: 'starting' });
+      }
+      duelStatusMsg.textContent = `No real opponent found — bot opponent (${profile.label}) joined.`;
+      initiateDuelMatch(true);
+    }
+
     startDuelBtn.addEventListener('click', () => {
-      // Read bet from UI
       let bet = 0;
       if (duelBetInput) bet = parseInt(duelBetInput.value, 10) || 0;
       if (bet < 0) bet = 0;
@@ -1221,79 +1383,63 @@
       }
 
       startDuelBtn.disabled = true;
-      duelStatusMsg.textContent = "Searching for an active opponent...";
+      duelStatusMsg.textContent = 'Searching for an active opponent...';
+      duelConnectionSeconds = 10;
+      updateDuelConnectionTimer();
 
-      const duelsRef = db.ref('duels');
-      duelsRef.once('value').then((snapshot) => {
-        const duels = snapshot.val() || {};
-        let openRoomId = null;
+      let hasCreatedWaitingRoom = false;
+      let foundRealOpponent = false;
 
-        for (let key in duels) {
-          // only match rooms with same bet amount
-          const roomBet = duels[key].bet || 0;
-          if (duels[key].status === 'waiting' && duels[key].p1 !== currentUser && roomBet === bet) {
-            openRoomId = key;
-            break;
-          }
-        }
-
-        if (openRoomId) {
-          currentDuelRoomId = openRoomId;
-          duelRole = 'player2';
-          opponentName = duels[openRoomId].p1;
-
-          // ensure joining player still has funds for the bet (double-check)
-          if (gold < bet + 2000) {
-            duelStatusMsg.textContent = `❌ You don't have enough Speed to cover the bet of ${bet}.`;
-            startDuelBtn.disabled = false;
-            return;
-          }
-
-          db.ref('duels/' + openRoomId).update({
-            p2: currentUser,
-            status: 'starting'
-          }).then(() => {
-            initiateDuelMatch(false);
-          });
-        } else {
-          currentDuelRoomId = 'duel_' + Date.now();
-          duelRole = 'player1';
-
-          const roomRef = db.ref('duels/' + currentDuelRoomId);
-          roomRef.set({
-            p1: currentUser,
-            p1Clicks: 0,
-            p2Clicks: 0,
-            status: 'waiting',
-            bet: bet
-          });
-          roomRef.onDisconnect().remove();
-
-          const matchTimeout = setTimeout(() => {
-            db.ref('duels/' + currentDuelRoomId).once('value').then((snap) => {
-              const data = snap.val();
-              if (data && data.status === 'waiting') {
-                opponentName = "ChallengerBot";
-                db.ref('duels/' + currentDuelRoomId).update({
-                  p2: opponentName,
-                  status: 'starting'
+      const tryMatch = () => {
+        if (inDuelMatch || foundRealOpponent) return;
+        pollOpenDuelRoom(bet).then((found) => {
+          if (found) {
+            foundRealOpponent = true;
+            stopDuelConnectionTimer();
+            db.ref('duels/' + currentDuelRoomId).update({ p2: currentUser, status: 'starting' }).then(() => {
+              initiateDuelMatch(false);
+            });
+          } else if (!hasCreatedWaitingRoom) {
+            hasCreatedWaitingRoom = true;
+            currentDuelRoomId = 'duel_' + Date.now();
+            duelRole = 'player1';
+            const roomRef = db.ref('duels/' + currentDuelRoomId);
+            roomRef.set({
+              p1: currentUser,
+              p1Clicks: 0,
+              p2Clicks: 0,
+              status: 'waiting',
+              bet: bet
+            });
+            roomRef.onDisconnect().remove();
+            db.ref('duels/' + currentDuelRoomId + '/status').on('value', (snap) => {
+              if (snap.val() === 'starting' && !inDuelMatch) {
+                stopDuelConnectionTimer();
+                db.ref('duels/' + currentDuelRoomId + '/p2').once('value').then((p2Snap) => {
+                  opponentName = p2Snap.val() || 'Challenger';
+                  initiateDuelMatch(false);
                 });
-                initiateDuelMatch(true);
               }
             });
-          }, 3000);
+          }
+        });
+      };
 
-          db.ref('duels/' + currentDuelRoomId + '/status').on('value', (snap) => {
-            if (snap.val() === 'starting' && !inDuelMatch) {
-              clearTimeout(matchTimeout);
-              db.ref('duels/' + currentDuelRoomId + '/p2').once('value').then((p2Snap) => {
-                opponentName = p2Snap.val() || "Challenger";
-                initiateDuelMatch(false);
-              });
-            }
-          });
+      tryMatch();
+      duelConnectionInterval = setInterval(() => {
+        if (inDuelMatch) {
+          stopDuelConnectionTimer();
+          return;
         }
-      });
+        duelConnectionSeconds -= 1;
+        updateDuelConnectionTimer();
+        if (duelConnectionSeconds <= 0) {
+          stopDuelConnectionTimer();
+          startDuelFallbackBot();
+        } else {
+          tryMatch();
+        }
+      }, 1000);
     });
 
     function initiateDuelMatch(isBot = false) {
@@ -1388,9 +1534,12 @@
     }
 
     function startBotOpponent() {
+      const profile = botProfile || chooseBotProfile();
+      botProfile = profile;
       botInterval = setInterval(() => {
         if (!isDuelActive) return;
-        oppDuelClicks += Math.floor(Math.random() * 3) + 1;
+        const step = Math.floor(Math.random() * (profile.maxStep - profile.minStep + 1)) + profile.minStep;
+        oppDuelClicks += Math.max(1, step);
         updateDuelBars();
 
         if (oppDuelClicks >= 100) {
@@ -1398,17 +1547,17 @@
           botInterval = null;
           endDuel(false);
         }
-      }, 150);
+      }, profile.interval);
     }
 
     function handleDuelClick() {
       if (!isDuelActive) return;
-
+      spawnClickEffect(duelClickBtn);
       myDuelClicks++;
       registerClicks(1);
       updateDuelBars();
 
-      if (currentDuelRoomId && duelRole && opponentName !== "ChallengerBot") {
+      if (currentDuelRoomId && duelRole && !opponentName.startsWith('ChallengerBot')) {
         const myKey = duelRole === 'player1' ? 'p1Clicks' : 'p2Clicks';
         db.ref('duels/' + currentDuelRoomId).update({ [myKey]: myDuelClicks });
       }
@@ -1419,6 +1568,11 @@
     }
 
     duelClickBtn.addEventListener('click', handleDuelClick);
+    duelGiveupBtn.addEventListener('click', () => {
+      if (!isDuelActive) return;
+      duelStatusMsg.textContent = 'You gave up! Ending the duel...';
+      endDuel(false);
+    });
 
     function updateDuelBars() {
       myDuelClicksElem.textContent = Math.min(myDuelClicks, 100);
@@ -1703,6 +1857,7 @@ window.addEventListener('keydown', (e) => {
 
     function handleMainClick() {
       if (!currentUser || isDuelActive) return;
+      spawnClickEffect(clickBtn);
       gold++;
       registerClicks(1);
       updateUI();
