@@ -1306,6 +1306,9 @@
         choosePlayerBtn.style.display = 'none';
         choosePlayerBtn.disabled = false;
       }
+      if (currentDuelRoomId && duelRole === 'player1') {
+        cleanupWaitingDuelRoom(currentDuelRoomId).catch(() => {});
+      }
 
       duelMatchArea.style.display = 'block';
       duelArenaArea.style.display = 'none';
@@ -1329,6 +1332,17 @@
       if (duelConnectionTimerElem) {
         duelConnectionTimerElem.textContent = '';
       }
+    }
+
+    function cleanupWaitingDuelRoom(roomId) {
+      if (!roomId) return Promise.resolve();
+      return db.ref('duels/' + roomId).once('value').then((snap) => {
+        const room = snap.val();
+        if (!room) return;
+        if (room.status === 'waiting' && room.p1 === currentUser) {
+          return db.ref('duels/' + roomId).remove();
+        }
+      }).catch(() => {});
     }
 
     function chooseBotProfile() {
@@ -1368,7 +1382,8 @@
         for (let key in duels) {
           const room = duels[key];
           if (room.status === 'waiting' && room.p1 !== currentUser) {
-            return { roomId: key, player: room.p1, bet: room.p1Bet || 0 };
+            const roomBet = room.p1Bet || room.bet || 0;
+            return { roomId: key, player: room.p1, bet: roomBet };
           }
         }
         return null;
@@ -1381,7 +1396,15 @@
       botProfile = profile;
       opponentName = `ChallengerBot (${profile.label})`;
       if (currentDuelRoomId) {
-        db.ref('duels/' + currentDuelRoomId).update({ p2: opponentName, status: 'starting' });
+        db.ref('duels/' + currentDuelRoomId).transaction((room) => {
+          if (!room || room.status !== 'waiting') {
+            return room;
+          }
+          room.p2 = opponentName;
+          room.p2Bet = 0;
+          room.status = 'starting';
+          return room;
+        });
       }
       duelStatusMsg.textContent = `No real opponent found — bot opponent (${profile.label}) joined.`;
       initiateDuelMatch(true);
