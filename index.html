@@ -540,6 +540,101 @@
       text-align: left;
     }
 
+    .duel-layout {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .duel-main-column {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .duel-side-panel {
+      width: 190px;
+      max-height: 380px;
+      display: flex;
+      flex-direction: column;
+      border: 2px solid var(--border-color);
+      border-radius: 12px;
+      padding: 10px;
+      background: rgba(255, 255, 255, 0.45);
+      backdrop-filter: blur(4px);
+    }
+
+    .duel-side-panel h3 {
+      font-size: 0.95rem;
+      color: var(--accent-pink);
+      margin-bottom: 8px;
+      text-align: center;
+    }
+
+    .active-duel-player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .active-duel-player-card {
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px;
+      background: var(--card-bg);
+      font-size: 0.8rem;
+      color: var(--text-main);
+      cursor: pointer;
+      text-align: left;
+      transition: transform 0.1s ease, border-color 0.2s ease;
+    }
+
+    .active-duel-player-card:hover {
+      transform: translateY(-1px);
+      border-color: var(--bright-pink);
+    }
+
+    .active-duel-player-card strong {
+      display: block;
+      color: var(--accent-pink);
+      margin-bottom: 3px;
+    }
+
+    .duel-stake-controls {
+      margin: 10px 0 12px;
+      padding: 10px;
+      border: 2px dashed var(--border-color);
+      border-radius: 10px;
+      background: rgba(247, 37, 133, 0.06);
+    }
+
+    .duel-stake-controls label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-sub);
+      margin-bottom: 4px;
+      font-weight: bold;
+    }
+
+    .duel-stake-controls select,
+    .duel-stake-controls input {
+      width: 100%;
+      padding: 8px;
+      border-radius: 8px;
+      border: 2px solid var(--border-color);
+      background: transparent;
+      color: var(--text-main);
+      font-family: inherit;
+      margin-bottom: 8px;
+    }
+
+    .duel-stake-help {
+      font-size: 0.75rem;
+      color: var(--subtext-color);
+      line-height: 1.3;
+    }
+
     .duel-player-bar-bg {
       width: 100%;
       height: 24px;
@@ -678,7 +773,7 @@
       <h2>😡 Mini Games 🥵</h2>
       <div class="minigame-list">
         <button class="minigame-option-btn" id="open-roulette-btn">Speed-Roulette (1,000 Speed)</button>
-        <button class="minigame-option-btn" id="open-duel-btn" style="background: #e63946; color: #fff;">🔥-SpeedDuel (2,000 Speed)</button>
+        <button class="minigame-option-btn" id="open-duel-btn" style="color: #fff;">🔥-SpeedDuel (2,000 Speed)</button>
       </div>
     </div>
   </div>
@@ -712,40 +807,63 @@
         <p style="color: #fff; margin-top: 10px; font-weight: bold;">GOONERS!!! READY TO CLICK!</p>
       </div>
 
-      <div id="duel-match-area" style="margin: 20px 0;">
-        <p id="duel-status-msg" style="margin-bottom: 8px; font-weight: bold;">Ready to test your speed against another player?</p>
-        <p id="duel-connection-timer" class="connection-timer"></p>
-        <p id="duel-candidate-info" class="connection-timer"></p>
-        <button class="submit-btn" id="choose-player-btn" style="display:none; margin-bottom: 12px; background: #06d6a0;">Choose Player</button>
-        <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:12px;">
-          <label for="duel-bet-input" style="font-size:0.9rem; color:var(--text-sub);">Bet:</label>
-          <input type="number" id="duel-bet-input" min="0" value="0" style="width:120px; padding:8px; border-radius:8px; border:2px solid var(--border-color); background:transparent; color:var(--text-main);">
-          <span style="font-size:0.85rem; color:var(--subtext-color);">(loser pays winner)</span>
+      <div class="duel-layout">
+        <div class="duel-main-column">
+          <div id="duel-match-area" style="margin: 20px 0;">
+            <p id="duel-status-msg" style="margin-bottom: 8px; font-weight: bold;">Ready to test your speed against another player?</p>
+            <p id="duel-connection-timer" class="connection-timer"></p>
+            <p id="duel-candidate-info" class="connection-timer"></p>
+            <button class="submit-btn" id="choose-player-btn" style="display:none; margin-bottom: 12px; background: #06d6a0;">Choose Player</button>
+            <div style="display:flex; gap:8px; align-items:center; justify-content:center; margin-bottom:12px;">
+              <label for="duel-bet-input" style="font-size:0.9rem; color:var(--text-sub);">Bet Speed:</label>
+              <input type="number" id="duel-bet-input" min="0" value="0" style="width:120px; padding:8px; border-radius:8px; border:2px solid var(--border-color); background:transparent; color:var(--text-main);">
+            </div>
+            <div class="duel-stake-controls">
+              <label for="duel-stake-item-select">Stake Shop Item</label>
+              <select id="duel-stake-item-select">
+                <option value="none">No item stake</option>
+                <option value="glove">Default Homie</option>
+                <option value="hat">Tom Boy</option>
+                <option value="sheriff">Goth Mommy</option>
+                <option value="mine">True Love</option>
+                <option value="rocket">Furred Baddie</option>
+                <option value="gun">Scarred Baddie</option>
+              </select>
+              <label for="duel-stake-qty-input">Amount</label>
+              <input type="number" id="duel-stake-qty-input" min="0" max="20" value="0">
+              <p class="duel-stake-help" id="duel-stake-help">Pick an item and quantity you already own from the shop.</p>
+            </div>
+            <button class="submit-btn" id="start-duel-btn" style="background: #e63946;">Find Match (2,000 Speed)</button>
+          </div>
+
+          <div id="duel-arena-area" style="display: none;">
+            <div class="duel-progress-container">
+              <div style="display:flex; justify-content: space-between; font-weight:bold;">
+                <span>YOU (<span id="my-duel-clicks">0</span>/100)</span>
+                <span id="my-duel-percent" style="margin-left: auto;">0%</span>
+              </div>
+              <div class="duel-player-bar-bg">
+                <div class="duel-player-bar-fill" id="my-duel-bar"></div>
+              </div>
+
+              <div style="display:flex; justify-content: space-between; font-weight:bold; margin-top: 10px;">
+                <span id="opp-duel-name">OPPONENT (0/100)</span>
+                <span id="opp-duel-percent" style="margin-left: auto;">0%</span>
+              </div>
+              <div class="duel-player-bar-bg">
+                <div class="duel-player-bar-fill" id="opp-duel-bar" style="background: linear-gradient(90deg, #3a86ff, #4361ee);"></div>
+              </div>
+            </div>
+
+            <button class="duel-click-target-btn" id="duel-click-btn">CLICK! (M1 / Space)</button>
+            <button class="top-control-btn giveup-btn" id="duel-giveup-btn" style="margin: 12px auto 0; background: #222; color: #fff; border: 2px solid #ff6b6b;">I Give Up</button>
+          </div>
         </div>
-        <button class="submit-btn" id="start-duel-btn" style="background: #e63946;">Find Match (2,000 Speed)</button>
-      </div>
 
-      <div id="duel-arena-area" style="display: none;">
-        <div class="duel-progress-container">
-          <div style="display:flex; justify-content: space-between; font-weight:bold;">
-            <span>YOU (<span id="my-duel-clicks">0</span>/100)</span>
-            <span id="my-duel-percent" style="margin-left: auto;">0%</span>
-          </div>
-          <div class="duel-player-bar-bg">
-            <div class="duel-player-bar-fill" id="my-duel-bar"></div>
-          </div>
-
-          <div style="display:flex; justify-content: space-between; font-weight:bold; margin-top: 10px;">
-            <span id="opp-duel-name">OPPONENT (0/100)</span>
-            <span id="opp-duel-percent" style="margin-left: auto;">0%</span>
-          </div>
-          <div class="duel-player-bar-bg">
-            <div class="duel-player-bar-fill" id="opp-duel-bar" style="background: linear-gradient(90deg, #3a86ff, #4361ee);"></div>
-          </div>
+        <div class="duel-side-panel">
+          <h3>Active Duel Players</h3>
+          <div class="active-duel-player-list" id="active-duel-player-list"></div>
         </div>
-
-        <button class="duel-click-target-btn" id="duel-click-btn">CLICK! (M1 / Space)</button>
-        <button class="top-control-btn giveup-btn" id="duel-giveup-btn" style="margin: 12px auto 0; background: #222; color: #fff; border: 2px solid #ff6b6b;">I Give Up</button>
       </div>
     </div>
   </div>
@@ -987,6 +1105,10 @@
     const choosePlayerBtn = document.getElementById('choose-player-btn');
     const duelGiveupBtn = document.getElementById('duel-giveup-btn');
     const clickEffectContainer = document.getElementById('click-effect-container');
+    const activeDuelPlayerList = document.getElementById('active-duel-player-list');
+    const duelStakeItemSelect = document.getElementById('duel-stake-item-select');
+    const duelStakeQtyInput = document.getElementById('duel-stake-qty-input');
+    const duelStakeHelp = document.getElementById('duel-stake-help');
 
     let isDuelActive = false;
     let inDuelMatch = false;
@@ -1005,11 +1127,167 @@
     let botInterval = null;
     let currentDuelPot = 0;
     let currentDuelOwnBet = 0;
+    let currentDuelOwnStakeType = null;
+    let currentDuelOwnStakeQty = 0;
+    let currentDuelOpponentStakeType = null;
+    let currentDuelOpponentStakeQty = 0;
+    let activeDuelPlayersListener = null;
+    let duelItemSettlementDone = false;
+    let switchUserRestoreUser = null;
+    const duelStakeLabels = {
+      glove: 'Default Homie',
+      hat: 'Tom Boy',
+      sheriff: 'Goth Mommy',
+      mine: 'True Love',
+      rocket: 'Furred Baddie',
+      gun: 'Scarred Baddie'
+    };
+
+    function updateDuelStakeHelp() {
+      if (!duelStakeHelp || !duelStakeItemSelect || !duelStakeQtyInput) return;
+      const itemKey = duelStakeItemSelect.value;
+      if (itemKey === 'none') {
+        duelStakeHelp.textContent = 'Pick an item and quantity you already own from the shop.';
+        duelStakeQtyInput.value = 0;
+        return;
+      }
+      const owned = upgrades[itemKey] ? upgrades[itemKey].count : 0;
+      duelStakeHelp.textContent = `You currently own ${owned} of this item. Set a quantity up to ${owned}.`;
+      const qty = parseInt(duelStakeQtyInput.value, 10) || 0;
+      if (qty > owned) {
+        duelStakeQtyInput.value = owned;
+      }
+    }
+
+    duelStakeItemSelect.addEventListener('change', updateDuelStakeHelp);
+    duelStakeQtyInput.addEventListener('input', updateDuelStakeHelp);
+
+    function getSelectedDuelStake() {
+      const stakeType = duelStakeItemSelect.value;
+      const qty = parseInt(duelStakeQtyInput.value, 10) || 0;
+      if (stakeType === 'none' || qty <= 0) {
+        return { stakeType: null, stakeQty: 0 };
+      }
+      const owned = upgrades[stakeType] ? upgrades[stakeType].count : 0;
+      if (!upgrades[stakeType] || owned < qty) {
+        return { stakeType: null, stakeQty: 0, error: `You only own ${owned} of that item.` };
+      }
+      return { stakeType, stakeQty: qty };
+    }
+
+    function updateLocalInventoryForDuelStake(stakeType, stakeQty, action) {
+      if (!stakeType || !stakeQty || !upgrades[stakeType]) return false;
+      if (action === 'deduct') {
+        if (upgrades[stakeType].count < stakeQty) return false;
+        upgrades[stakeType].count -= stakeQty;
+      } else if (action === 'award') {
+        upgrades[stakeType].count += stakeQty;
+      }
+      updateUI();
+      saveUserDataGlobal();
+      return true;
+    }
+
+    function settleLocalDuelStake(won) {
+      if (duelItemSettlementDone) return;
+      duelItemSettlementDone = true;
+      if (!won) return;
+      if (currentDuelOpponentStakeType && currentDuelOpponentStakeQty > 0) {
+        updateLocalInventoryForDuelStake(currentDuelOpponentStakeType, currentDuelOpponentStakeQty, 'award');
+      }
+    }
+
+    function renderActiveDuelPlayers(snapshot) {
+      if (!activeDuelPlayerList) return;
+      const duels = snapshot.val() || {};
+      const entries = Object.entries(duels)
+        .filter(([, room]) => room && room.status === 'waiting' && room.p1 && room.p1 !== currentUser && !room.p2)
+        .map(([roomId, room]) => ({
+          roomId,
+          player: room.p1,
+          bet: room.p1Bet || 0,
+          stakeType: room.p1StakeType || null,
+          stakeQty: room.p1StakeQty || 0,
+          createdAt: room.createdAt || 0
+        }))
+        .sort((a, b) => b.createdAt - a.createdAt);
+
+      activeDuelPlayerList.innerHTML = '';
+      if (!entries.length) {
+        activeDuelPlayerList.innerHTML = '<div style="font-size:0.8rem; color:var(--text-sub);">No active duel players yet.</div>';
+        return;
+      }
+
+      entries.forEach((entry) => {
+        const card = document.createElement('button');
+        card.className = 'active-duel-player-card';
+        card.type = 'button';
+        const stakeText = entry.stakeType ? `${entry.stakeQty} ${duelStakeLabels[entry.stakeType] || entry.stakeType}` : 'No item stake';
+        card.innerHTML = `<strong>${entry.player}</strong><span>Bet: ${entry.bet.toLocaleString()} Speed</span><span>Stake: ${stakeText}</span>`;
+        card.addEventListener('click', () => {
+          const stakeSelection = getSelectedDuelStake();
+          if (stakeSelection.error) {
+            duelStatusMsg.textContent = `❌ ${stakeSelection.error}`;
+            return;
+          }
+          const ownBet = parseInt(duelBetInput.value, 10) || 0;
+          if (ownBet < 0) {
+            duelStatusMsg.textContent = '❌ Bet cannot be negative.';
+            return;
+          }
+          if (gold < 2000 + ownBet + (entry.bet || 0)) {
+            duelStatusMsg.textContent = `❌ You need at least ${(2000 + ownBet + (entry.bet || 0)).toLocaleString()} Speed for entry, your bet, and their bet.`;
+            return;
+          }
+          currentDuelOwnBet = ownBet;
+          currentDuelOwnStakeType = stakeSelection.stakeType;
+          currentDuelOwnStakeQty = stakeSelection.stakeQty;
+          currentDuelRoomId = entry.roomId;
+          duelRole = 'player2';
+          opponentName = entry.player;
+          if (choosePlayerBtn) {
+            choosePlayerBtn.disabled = true;
+            choosePlayerBtn.textContent = 'Inviting...';
+          }
+
+          db.ref('duels/' + currentDuelRoomId).transaction((room) => {
+            if (!room || room.status !== 'waiting') {
+              return room;
+            }
+            room.p2 = currentUser;
+            room.p2Bet = currentDuelOwnBet;
+            room.p2StakeType = currentDuelOwnStakeType;
+            room.p2StakeQty = currentDuelOwnStakeQty;
+            room.status = 'starting';
+            return room;
+          }, (err, committed, snapshot) => {
+            if (err || !committed || !snapshot.exists()) {
+              duelStatusMsg.textContent = 'Another player joined first. Searching again...';
+              if (choosePlayerBtn) {
+                choosePlayerBtn.style.display = 'none';
+                choosePlayerBtn.disabled = false;
+              }
+              duelCandidate = null;
+              return;
+            }
+            stopDuelConnectionTimer();
+            initiateDuelMatch(false);
+          });
+        });
+        activeDuelPlayerList.appendChild(card);
+      });
+    }
 
     closeLoginBtn.addEventListener('click', () => {
-      if (currentUser) {
+      if (currentUser || switchUserRestoreUser) {
         loginModal.classList.remove('active');
         authErrorElem.textContent = '';
+        if (!currentUser && switchUserRestoreUser) {
+          currentUser = switchUserRestoreUser;
+          userTagElem.textContent = `Player: ${switchUserRestoreUser}`;
+          switchUserRestoreUser = null;
+          updateUI();
+        }
       } else {
         authErrorElem.textContent = 'Please log in or create an account first!';
       }
@@ -1170,6 +1448,7 @@
     }
 
     function attachLiveListener(username, userRef) {
+      switchUserRestoreUser = null;
       currentUserRef = userRef;
       currentUserRef.on('value', (snapshot) => {
         const data = snapshot.val();
@@ -1185,9 +1464,20 @@
     });
 
     logoutBtn.addEventListener('click', () => {
-      saveUserDataGlobal();
       if (currentUserRef) currentUserRef.off();
+      if (currentUser) {
+        saveUserDataGlobal();
+        switchUserRestoreUser = currentUser;
+      }
+      currentUserRef = null;
       currentUser = null;
+      isRegisterMode = false;
+      toggleLoginBtn.classList.add('active');
+      toggleRegisterBtn.classList.remove('active');
+      authSubmitBtn.textContent = 'Login';
+      authErrorElem.textContent = '';
+      usernameInput.value = '';
+      passwordInput.value = '';
       loginModal.classList.add('active');
     });
 
@@ -1263,6 +1553,7 @@
     openDuelBtn.addEventListener('click', () => {
       minigamesModal.classList.remove('active');
       resetDuelUI();
+      attachActiveDuelPlayersListener();
       duelModal.classList.add('active');
     });
 
@@ -1272,6 +1563,19 @@
       resetDuelUI();
       duelModal.classList.remove('active');
     });
+
+    function attachActiveDuelPlayersListener() {
+      if (activeDuelPlayersListener) return;
+      const duelsRef = db.ref('duels');
+      activeDuelPlayersListener = (snapshot) => renderActiveDuelPlayers(snapshot);
+      duelsRef.on('value', activeDuelPlayersListener);
+    }
+
+    function detachActiveDuelPlayersListener() {
+      if (!activeDuelPlayersListener) return;
+      db.ref('duels').off('value', activeDuelPlayersListener);
+      activeDuelPlayersListener = null;
+    }
 
     function resetDuelUI() {
       inDuelMatch = false;
@@ -1295,7 +1599,9 @@
         duelConnectionInterval = null;
       }
 
+      detachActiveDuelPlayersListener();
       duelHasEnded = false;
+      duelItemSettlementDone = false;
       if (duelConnectionTimerElem) {
         duelConnectionTimerElem.textContent = '';
       }
@@ -1303,6 +1609,15 @@
         duelCandidateInfo.textContent = '';
       }
       duelCandidate = null;
+      currentDuelOwnStakeType = null;
+      currentDuelOwnStakeQty = 0;
+      currentDuelOpponentStakeType = null;
+      currentDuelOpponentStakeQty = 0;
+      currentDuelRoomId = null;
+      duelRole = null;
+      opponentName = 'Challenger';
+      if (duelStakeItemSelect) duelStakeItemSelect.value = 'none';
+      if (duelStakeQtyInput) duelStakeQtyInput.value = '0';
       if (choosePlayerBtn) {
         choosePlayerBtn.style.display = 'none';
         choosePlayerBtn.disabled = false;
@@ -1383,14 +1698,19 @@
     function pollOpenDuelRoom(bet) {
       return db.ref('duels').once('value').then((snapshot) => {
         const duels = snapshot.val() || {};
-        for (let key in duels) {
-          const room = duels[key];
-          if (room.status === 'waiting' && room.p1 !== currentUser) {
-            const roomBet = room.p1Bet || room.bet || 0;
-            return { roomId: key, player: room.p1, bet: roomBet };
-          }
-        }
-        return null;
+        const candidates = Object.entries(duels)
+          .filter(([, room]) => room && room.status === 'waiting' && room.p1 && room.p1 !== currentUser && !room.p2)
+          .map(([roomId, room]) => ({
+            roomId,
+            player: room.p1,
+            bet: room.p1Bet || 0,
+            createdAt: room.createdAt || 0
+          }))
+          .sort((a, b) => a.createdAt - b.createdAt);
+
+        if (!candidates.length) return null;
+        const match = candidates.find((candidate) => (candidate.bet || 0) <= (bet || 0)) || candidates[0];
+        return match;
       });
     }
 
@@ -1454,6 +1774,15 @@
       if (duelBetInput) bet = parseInt(duelBetInput.value, 10) || 0;
       if (bet < 0) bet = 0;
 
+      const stakeSelection = getSelectedDuelStake();
+      if (stakeSelection.error) {
+        duelStatusMsg.textContent = `❌ ${stakeSelection.error}`;
+        return;
+      }
+
+      currentDuelOwnStakeType = stakeSelection.stakeType;
+      currentDuelOwnStakeQty = stakeSelection.stakeQty;
+
       if (gold < 2000 + bet) {
         duelStatusMsg.textContent = `❌ You need at least ${ (2000 + bet).toLocaleString() } Speed (entry + bet)!`;
         return;
@@ -1499,7 +1828,12 @@
               p2Clicks: 0,
               status: 'waiting',
               p1Bet: bet,
-              p2Bet: 0
+              p2Bet: 0,
+              p1StakeType: currentDuelOwnStakeType,
+              p1StakeQty: currentDuelOwnStakeQty,
+              p2StakeType: null,
+              p2StakeQty: 0,
+              createdAt: Date.now()
             });
             roomRef.onDisconnect().remove();
             db.ref('duels/' + currentDuelRoomId).on('value', (snap) => {
@@ -1540,6 +1874,7 @@
 
     function initiateDuelMatch(isBot = false) {
       // Fetch bet from room (if any) and deduct entry + bet from local player
+      duelItemSettlementDone = false;
       currentDuelPot = 0;
       currentDuelOwnBet = 0;
       if (currentDuelRoomId) {
@@ -1547,11 +1882,25 @@
           const data = snap.val() || {};
           const p1Bet = data.p1Bet || 0;
           const p2Bet = data.p2Bet || 0;
+          const p1StakeType = data.p1StakeType || null;
+          const p2StakeType = data.p2StakeType || null;
+          const p1StakeQty = data.p1StakeQty || 0;
+          const p2StakeQty = data.p2StakeQty || 0;
           currentDuelPot = p1Bet + p2Bet;
           currentDuelOwnBet = duelRole === 'player1' ? p1Bet : p2Bet;
+          currentDuelOwnStakeType = duelRole === 'player1' ? p1StakeType : p2StakeType;
+          currentDuelOwnStakeQty = duelRole === 'player1' ? p1StakeQty : p2StakeQty;
+          currentDuelOpponentStakeType = duelRole === 'player1' ? p2StakeType : p1StakeType;
+          currentDuelOpponentStakeQty = duelRole === 'player1' ? p2StakeQty : p1StakeQty;
 
           gold -= 2000;
           if (currentDuelOwnBet > 0) gold -= currentDuelOwnBet;
+          if (currentDuelOwnStakeType && currentDuelOwnStakeQty > 0) {
+            if (!updateLocalInventoryForDuelStake(currentDuelOwnStakeType, currentDuelOwnStakeQty, 'deduct')) {
+              duelStatusMsg.textContent = '❌ Your item stake could not be placed.';
+              return;
+            }
+          }
           updateUI();
           saveUserDataGlobal();
 
@@ -1712,6 +2061,9 @@
         const pot = currentDuelPot > 0 ? currentDuelPot : 0;
         if (pot > 0) {
           gold += pot;
+        }
+        settleLocalDuelStake(true);
+        if (pot > 0) {
           alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed plus ${pot.toLocaleString()} Speed from bets! 🥰`);
         } else {
           alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed! 🥰`);
@@ -1764,6 +2116,9 @@
         gold += 4000;
         if (pot > 0) {
           gold += pot;
+        }
+        settleLocalDuelStake(true);
+        if (pot > 0) {
           alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed plus ${pot.toLocaleString()} Speed from bets! 🥰`);
         } else {
           alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed! 🥰`);
