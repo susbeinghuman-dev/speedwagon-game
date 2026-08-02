@@ -860,7 +860,7 @@
           </div>
         </div>
 
-        <div class="duel-side-panel">
+        <div class="duel-side-panel" id="duel-side-panel">
           <h3>Active Duel Players</h3>
           <div class="active-duel-player-list" id="active-duel-player-list"></div>
         </div>
@@ -1106,6 +1106,7 @@
     const duelGiveupBtn = document.getElementById('duel-giveup-btn');
     const clickEffectContainer = document.getElementById('click-effect-container');
     const activeDuelPlayerList = document.getElementById('active-duel-player-list');
+    const duelSidePanel = document.getElementById('duel-side-panel');
     const duelStakeItemSelect = document.getElementById('duel-stake-item-select');
     const duelStakeQtyInput = document.getElementById('duel-stake-qty-input');
     const duelStakeHelp = document.getElementById('duel-stake-help');
@@ -1632,12 +1633,18 @@
       closeDuelBtn.style.display = 'block';
       startDuelBtn.disabled = false;
       duelStatusMsg.textContent = "Ready to test your speed against another player?";
+      updateDuelSidePanelVisibility();
       updateDuelBars();
     }
 
     function updateDuelConnectionTimer() {
       if (!duelConnectionTimerElem) return;
       duelConnectionTimerElem.textContent = `Searching for a real opponent... ${duelConnectionSeconds}s remaining`;
+    }
+
+    function updateDuelSidePanelVisibility() {
+      if (!duelSidePanel) return;
+      duelSidePanel.style.display = (inDuelMatch || isDuelActive) ? 'none' : 'block';
     }
 
     function stopDuelConnectionTimer() {
@@ -1934,6 +1941,7 @@
       closeDuelBtn.style.display = 'none';
       duelMatchArea.style.display = 'none';
       duelArenaArea.style.display = 'block';
+      updateDuelSidePanelVisibility();
 
       oppDuelNameElem.textContent = `${opponentName.toUpperCase()} (0/100)`;
       updateDuelBars();
@@ -2035,6 +2043,14 @@
       oppDuelBarElem.style.width = `${Math.min(oppDuelClicks, 100)}%`;
     }
 
+    function getDuelLootSummary(won) {
+      const stakeType = won ? currentDuelOpponentStakeType : currentDuelOwnStakeType;
+      const stakeQty = won ? currentDuelOpponentStakeQty : currentDuelOwnStakeQty;
+      if (!stakeType || stakeQty <= 0) return '';
+      const label = duelStakeLabels[stakeType] || stakeType;
+      return `${won ? 'and earned' : 'and lost'} ${stakeQty} ${label}`;
+    }
+
     function endDuel(won) {
       if (duelHasEnded) return;
       duelHasEnded = true;
@@ -2063,14 +2079,16 @@
           gold += pot;
         }
         settleLocalDuelStake(true);
+        const lootSummary = getDuelLootSummary(true);
         if (pot > 0) {
-          alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed plus ${pot.toLocaleString()} Speed from bets! 🥰`);
+          alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed plus ${pot.toLocaleString()} Speed from bets${lootSummary ? ` ${lootSummary}` : ''}! 🥰`);
         } else {
-          alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed! 🥰`);
+          alert(`GOOD BOY! You won the SpeedDuel and earned 2,000 Speed${lootSummary ? ` ${lootSummary}` : ''}! 🥰`);
         }
       } else {
         const lostBetMsg = currentDuelOwnBet > 0 ? ` and forfeited ${currentDuelOwnBet.toLocaleString()} Speed bet` : '';
-        alert(`BRUHHHH! You lost the duel and forfeited 2,000 Speed${lostBetMsg}. 🥲`);
+        const lootSummary = getDuelLootSummary(false);
+        alert(`BRUHHHH! You lost the duel and forfeited 2,000 Speed${lostBetMsg}${lootSummary ? ` ${lootSummary}` : ''}. 🥲`);
       }
 
       currentDuelPot = 0;
@@ -2118,14 +2136,16 @@
           gold += pot;
         }
         settleLocalDuelStake(true);
+        const lootSummary = getDuelLootSummary(true);
         if (pot > 0) {
-          alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed plus ${pot.toLocaleString()} Speed from bets! 🥰`);
+          alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed plus ${pot.toLocaleString()} Speed from bets${lootSummary ? ` ${lootSummary}` : ''}! 🥰`);
         } else {
-          alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed! 🥰`);
+          alert(`GOOD BOY! Opponent lost or gave up, you win 2,000 Speed${lootSummary ? ` ${lootSummary}` : ''}! 🥰`);
         }
       } else {
         const lostBetMsg = currentDuelOwnBet > 0 ? ` and forfeited ${currentDuelOwnBet.toLocaleString()} Speed bet` : '';
-        alert(`BRUHHHH! Your opponent won the duel${lostBetMsg}. 🥲`);
+        const lootSummary = getDuelLootSummary(false);
+        alert(`BRUHHHH! Your opponent won the duel${lostBetMsg}${lootSummary ? ` ${lootSummary}` : ''}. 🥲`);
       }
 
       currentDuelPot = 0;
