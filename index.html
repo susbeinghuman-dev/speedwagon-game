@@ -828,6 +828,7 @@
                 <option value="mine">True Love</option>
                 <option value="rocket">Furred Baddie</option>
                 <option value="gun">Scarred Baddie</option>
+                <option value="shigga">Shigga</option>
               </select>
               <label for="duel-stake-qty-input">Amount</label>
               <input type="number" id="duel-stake-qty-input" min="0" max="20" value="0">
@@ -975,6 +976,18 @@
         <div class="upgrade-count" id="gun-count">0</div>
       </button>
 
+       <button class="upgrade-btn" id="buy-shigga" disabled>
+        <div class="upgrade-details">
+          <img src="https://i1.rgstatic.net/ii/profile.image/441696988209153-1482320176118_Q512/Shankar-Thangavelu.jpg" alt="Shigga" class="upgrade-icon">
+          <div class="upgrade-info">
+            <h3>Shigga 🧑🏿‍🔧</h3>
+            <p>Cost: <span id="shigga-cost">100,000</span> Speed</p>
+            <p>+ 6,700.0 Speed/s</p>
+          </div>
+        </div>
+        <div class="upgrade-count" id="shigga-count">0</div>
+      </button>
+
     </div>
   </div>
 
@@ -1041,7 +1054,8 @@
       sheriff: { cost: 400, gps: 10.0, count: 0, costElem: 'sheriff-cost', countElem: 'sheriff-count', btnElem: 'buy-sheriff' },
       mine: { cost: 1000, gps: 100.0, count: 0, costElem: 'mine-cost', countElem: 'mine-count', btnElem: 'buy-mine' },
       rocket: { cost: 10000, gps: 800.0, count: 0, costElem: 'rocket-cost', countElem: 'rocket-count', btnElem: 'buy-rocket' },
-      gun: { cost: 50000, gps: 2000.0, count: 0, costElem: 'gun-cost', countElem: 'gun-count', btnElem: 'buy-gun' }
+      gun: { cost: 50000, gps: 2000.0, count: 0, costElem: 'gun-cost', countElem: 'gun-count', btnElem: 'buy-gun' },
+      shigga: { cost: 100000, gps: 6700.0, count: 0, costElem: 'shigga-cost', countElem: 'shigga-count', btnElem: 'buy-shigga' }
     };
 
     const goldCountElem = document.getElementById('gold-count');
@@ -1141,7 +1155,8 @@
       sheriff: 'Goth Mommy',
       mine: 'True Love',
       rocket: 'Furred Baddie',
-      gun: 'Scarred Baddie'
+      gun: 'Scarred Baddie',
+      shigga: 'Shigga'
     };
 
     function updateDuelStakeHelp() {
@@ -1313,7 +1328,8 @@
           sheriff: { count: upgrades.sheriff.count, cost: upgrades.sheriff.cost },
           mine: { count: upgrades.mine.count, cost: upgrades.mine.cost },
           rocket: { count: upgrades.rocket.count, cost: upgrades.rocket.cost },
-          gun: { count: upgrades.gun.count, cost: upgrades.gun.cost }
+          gun: { count: upgrades.gun.count, cost: upgrades.gun.cost },
+          shigga: { count: upgrades.shigga.count, cost: upgrades.shigga.cost }
         },
         lastThreshold: lastEmojiThreshold,
         popupsEnabled: popupsEnabled,
@@ -1414,7 +1430,8 @@
               sheriff: { count: 0, cost: 400 },
               mine: { count: 0, cost: 1000 },
               rocket: { count: 0, cost: 10000 },
-              gun: { count: 0, cost: 50000 }
+              gun: { count: 0, cost: 50000 },
+              shigga: { count: 0, cost: 100000 }
             }
           };
 
@@ -2442,6 +2459,7 @@ window.addEventListener('keydown', (e) => {
     document.getElementById('buy-mine').addEventListener('click', (e) => { buyUpgrade('mine'); e.target.blur(); });
     document.getElementById('buy-rocket').addEventListener('click', (e) => { buyUpgrade('rocket'); e.target.blur(); });
     document.getElementById('buy-gun').addEventListener('click', (e) => { buyUpgrade('gun'); e.target.blur(); });
+    document.getElementById('buy-shigga').addEventListener('click', (e) => { buyUpgrade('shigga'); e.target.blur(); });
 
     function getTotalGPS() {
       let total = 0;
